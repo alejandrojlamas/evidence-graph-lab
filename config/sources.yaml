@@ -1,0 +1,223 @@
+project:
+  user_agent: "${RED_PRIVADA_USER_AGENT}"
+  request_delay_seconds: 1.0
+  # Seguro por defecto. Solo habilitar para una fuente con autorización explícita.
+  allow_robots_unavailable: false
+  cache_dir: "data/cache"
+  database_path: "data/state/red_privada.sqlite"
+  output_dir: "data/output"
+
+llm:
+  provider: "dev"  # dev (local) | deepseek (externo) | auto (consulte README)
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-v4-pro"
+  temperature: 0.1
+  max_output_tokens: 5000
+  max_chars_per_document: 18000
+  thinking: "disabled"
+  user_id: "red-privada-extractor"
+  cache_extractions: true
+
+resolver:
+  similarity_threshold: 0.92
+  ambiguous_low: 0.84
+  use_embeddings: false
+  embedding_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  aliases:
+    "Claudia Sheinbaum Pardo":
+      - "Claudia Sheinbaum"
+      - "Presidenta Claudia Sheinbaum"
+    "Andres Manuel Lopez Obrador":
+      - "AMLO"
+      - "López Obrador"
+      - "Andrés Manuel López Obrador"
+    "Petróleos Mexicanos":
+      - "Pemex"
+      - "PEMEX"
+    "Ciudad de México":
+      - "CDMX"
+      - "CdMx"
+
+graph:
+  backend: "sqlite"  # sqlite | neo4j
+  neo4j:
+    uri: "${NEO4J_URI:-neo4j://localhost:7687}"
+    user: "${NEO4J_USER:-neo4j}"
+    password: "${NEO4J_PASSWORD}"
+    database: "neo4j"
+
+scoring:
+  enabled: true
+  null_model_samples: 100
+  null_model_seed: 20260608
+  null_model_alpha: 0.1
+  temporal_window_days: 7
+  independence_threshold: 0.45
+  improbability_threshold: 0.55
+  specificity_threshold: 0.45
+  temporal_threshold: 0.4
+  min_final_score: 0.5
+
+signals:
+  enabled: true
+  small_note_top_n: 10
+  morning_top_n: 10
+  novelty_window_days: 21
+  low_attention_threshold: 0.35
+  structural_novelty_threshold: 0.25
+  small_note_min_score: 0.45
+  morning_lookback_days: 14
+  min_non_official_mentions: 1
+  official_side: "official_government"
+
+known_entities:
+  - name: "Claudia Sheinbaum Pardo"
+    entity_type: "person"
+    aliases: ["Claudia Sheinbaum", "Presidenta Claudia Sheinbaum"]
+  - name: "Presidencia de la República"
+    entity_type: "organization"
+    aliases: ["Presidencia"]
+  - name: "Gobierno de México"
+    entity_type: "organization"
+    aliases: ["Gobierno Federal"]
+  - name: "Petróleos Mexicanos"
+    entity_type: "company"
+    aliases: ["Pemex", "PEMEX"]
+  - name: "Ciudad de México"
+    entity_type: "place"
+    aliases: ["CDMX", "CdMx"]
+  - name: "Estados Unidos"
+    entity_type: "place"
+    aliases: ["EU", "EUA", "EE.UU."]
+  - name: "Veracruz"
+    entity_type: "place"
+    aliases: []
+  - name: "Coatzacoalcos"
+    entity_type: "place"
+    aliases: []
+  - name: "Clara Brugada"
+    entity_type: "person"
+    aliases: []
+  - name: "Alejandro Moreno"
+    entity_type: "person"
+    aliases: []
+  - name: "Metro"
+    entity_type: "organization"
+    aliases: ["Sistema de Transporte Colectivo Metro"]
+  - name: "Mundial 2026"
+    entity_type: "event"
+    aliases: ["Mundial", "Copa Mundial 2026"]
+  - name: "Rocío Nahle García"
+    entity_type: "person"
+    aliases: ["Rocío Nahle"]
+  - name: "Gabriela Cuevas"
+    entity_type: "person"
+    aliases: []
+  - name: "Luz Elena González"
+    entity_type: "person"
+    aliases: []
+  - name: "Jesús Esteva"
+    entity_type: "person"
+    aliases: []
+  - name: "CNTE"
+    entity_type: "organization"
+    aliases: ["Coordinadora Nacional de Trabajadores de la Educación"]
+  - name: "CFE"
+    entity_type: "company"
+    aliases: ["Comisión Federal de Electricidad"]
+  - name: "Suprema Corte de Justicia de la Nación"
+    entity_type: "organization"
+    aliases: ["Suprema Corte", "SCJN"]
+  - name: "Morena"
+    entity_type: "organization"
+    aliases: ["Movimiento Regeneración Nacional"]
+  - name: "Partido Acción Nacional"
+    entity_type: "organization"
+    aliases: ["PAN"]
+  - name: "Partido Revolucionario Institucional"
+    entity_type: "organization"
+    aliases: ["PRI"]
+  - name: "Movimiento Ciudadano"
+    entity_type: "organization"
+    aliases: ["MC"]
+  - name: "Secretaría de Educación Pública"
+    entity_type: "organization"
+    aliases: ["SEP"]
+  - name: "Israel"
+    entity_type: "place"
+    aliases: []
+  - name: "Hamas"
+    entity_type: "organization"
+    aliases: ["Hamás"]
+  - name: "Organización de las Naciones Unidas"
+    entity_type: "organization"
+    aliases: ["ONU", "Naciones Unidas"]
+
+sources:
+  - name: "presidencia_mananera"
+    kind: "gob_presidency"
+    enabled: false
+    side: "official_government"
+    attention_weight: 1.0
+    attention_note: "Fuente oficial principal; alta atención institucional."
+    archive_url: "https://www.gob.mx/presidencia/es/archivo/articulos?idiom=es&order=DESC&page={page}"
+    title_include: "Versión estenográfica. Conferencia de prensa de la presidenta Claudia Sheinbaum Pardo"
+    max_pages: 1
+    limit: 2
+    note: "Ejemplo deshabilitado; confirmar términos, robots.txt y vigencia antes de activarlo."
+
+  - name: "milenio_gerardo_esquivel"
+    kind: "sitemap_column"
+    enabled: false
+    side: "configured_column_a"
+    attention_weight: 0.55
+    attention_note: "Columna configurada; peso editorial ajustable por el usuario."
+    sitemap_url: "https://www.milenio.com/sitemap/articles/sitemap-articles-current.xml"
+    url_include: "/opinion/gerardo-esquivel/"
+    limit: 1
+    note: "Ejemplo deshabilitado; la etiqueta editorial es configurable, no una inferencia."
+
+  - name: "milenio_trascendio"
+    kind: "sitemap_column"
+    enabled: false
+    side: "configured_column_b"
+    attention_weight: 0.50
+    attention_note: "Columna de trascendidos; se trata como menor atención relativa."
+    sitemap_url: "https://www.milenio.com/sitemap/articles/sitemap-articles-current.xml"
+    url_include: "/opinion/editoriales/trascendio-nacional/"
+    limit: 1
+    note: "Ejemplo deshabilitado; confirmar términos, robots.txt y vigencia antes de activarlo."
+
+  - name: "aristegui_opinion_rss"
+    kind: "rss_feed"
+    enabled: false
+    side: "independent_opinion"
+    feed_url: "https://editorial.aristeguinoticias.com/category/opinion/feed/"
+    fetch_article: false
+    min_text_chars: 120
+    limit: 2
+    attention_weight: 0.45
+    attention_note: "RSS público de opinión; se usa la descripción del feed para reducir scraping."
+    note: "Ejemplo deshabilitado; revisar términos, robots.txt y vigencia antes de activarlo."
+
+  - name: "jornada_opinion_rss"
+    kind: "rss_feed"
+    enabled: false
+    side: "left_opinion"
+    feed_url: "https://www.jornada.com.mx/rss/opinion.xml"
+    fetch_article: false
+    min_text_chars: 120
+    limit: 3
+    attention_weight: 0.40
+    attention_note: "RSS sindicado de opinión; se usa la descripción del feed."
+    note: "Ejemplo deshabilitado; revisar términos, robots.txt y vigencia antes de activarlo."
+
+  - name: "el_universal_bajo_reserva"
+    kind: "listing_column"
+    enabled: false
+    side: "configured_column_b"
+    attention_weight: 0.45
+    listing_url: "https://www.eluniversal.com.mx/opinion/bajo-reserva/"
+    url_include: "/opinion/bajo-reserva/"
+    limit: 1
+    note: "Ejemplo deshabilitado; no activar sin confirmar acceso automatizado y copyright."

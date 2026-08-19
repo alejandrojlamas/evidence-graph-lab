@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "red-privada"
+version = "0.1.0"
+description = "Análisis reproducible de relaciones con evidencia y procedencia por arista."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = [
+  "entity-resolution",
+  "graph-analysis",
+  "investigative-research",
+  "natural-language-processing",
+  "provenance",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: Spanish",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+  "beautifulsoup4>=4.12.3",
+  "httpx>=0.27.2",
+  "langgraph>=0.2.60",
+  "networkx>=3.3",
+  "neo4j>=6.0.0",
+  "openai>=1.55.0",
+  "pydantic>=2.9.2",
+  "python-dateutil>=2.9.0.post0",
+  "pyyaml>=6.0.2",
+  "tenacity>=9.0.0",
+  "trafilatura>=2.0.0",
+  "typer>=0.13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.3",
+  "ruff>=0.8.0",
+]
+embeddings = [
+  "sentence-transformers>=5.0.0",
+]
+
+[project.scripts]
+red-privada = "red_privada.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/alejandrojlamas/Red-privada"
+Repository = "https://github.com/alejandrojlamas/Red-privada.git"
+Issues = "https://github.com/alejandrojlamas/Red-privada/issues"
+Documentation = "https://github.com/alejandrojlamas/Red-privada#readme"
+
+[tool.setuptools.packages.find]
+include = ["red_privada*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
