@@ -39,7 +39,7 @@ def test_sqlite_graph_is_idempotent(tmp_path) -> None:
         confidence=0.5,
         evidence_id="ev_ab",
         document_id="doc_1",
-        quote="A y B aparecen en el mismo fragmento.",
+        quote="A and B appear in the same excerpt.",
         source_name="source",
         source_side="side",
         url="https://example.org/doc",
@@ -54,4 +54,3 @@ def test_sqlite_graph_is_idempotent(tmp_path) -> None:
     graph.upsert_relations([relation])
 
     assert graph.counts() == {"entities": 2, "edges": 1, "evidence": 1}
-

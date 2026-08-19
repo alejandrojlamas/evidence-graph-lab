@@ -3,15 +3,17 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "red-privada"
+name = "evidence-graph-lab"
 version = "0.1.0"
-description = "Análisis reproducible de relaciones con evidencia y procedencia por arista."
+description = "An applied-AI lab for provenance-aware entity resolution and evidence graph analysis."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = [
+  "artificial-intelligence",
   "entity-resolution",
+  "evidence-graph",
   "graph-analysis",
   "investigative-research",
   "natural-language-processing",
@@ -22,7 +24,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "Natural Language :: Spanish",
+  "Natural Language :: English",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
@@ -46,6 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2.2",
   "pytest>=8.3.3",
   "ruff>=0.8.0",
 ]
@@ -54,16 +57,17 @@ embeddings = [
 ]
 
 [project.scripts]
-red-privada = "red_privada.cli:app"
+evidence-graph = "evidence_graph_lab.cli:app"
+red-privada = "red_privada.cli:app"  # Compatibility alias for the original 0.1 CLI.
 
 [project.urls]
-Homepage = "https://github.com/alejandrojlamas/Red-privada"
-Repository = "https://github.com/alejandrojlamas/Red-privada.git"
-Issues = "https://github.com/alejandrojlamas/Red-privada/issues"
-Documentation = "https://github.com/alejandrojlamas/Red-privada#readme"
+Homepage = "https://github.com/alejandrojlamas/evidence-graph-lab"
+Repository = "https://github.com/alejandrojlamas/evidence-graph-lab.git"
+Issues = "https://github.com/alejandrojlamas/evidence-graph-lab/issues"
+Documentation = "https://github.com/alejandrojlamas/evidence-graph-lab#readme"
 
 [tool.setuptools.packages.find]
-include = ["red_privada*"]
+include = ["evidence_graph_lab*", "red_privada*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -16,7 +16,9 @@ from red_privada.config import load_config
 from red_privada.graph import Neo4jGraph, SQLiteGraph
 from red_privada.storage import SQLiteStore
 
-app = typer.Typer(help="Red Privada")
+app = typer.Typer(
+    help="Evidence Graph Lab: provenance-aware entity resolution and graph research."
+)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -33,7 +35,7 @@ def load_runtime(config_path: Path):
     return config, store, graph
 
 
-@app.command()
+@app.command(help="Collect documents from explicitly enabled sources.")
 def ingest(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -44,7 +46,7 @@ def ingest(
     typer.echo(f"documents_collected={len(documents)}")
 
 
-@app.command()
+@app.command(help="Extract provenance-backed entities and relationships from stored documents.")
 def extract(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -55,7 +57,7 @@ def extract(
     typer.echo(f"documents_extracted={len(extractions)}")
 
 
-@app.command(name="graph")
+@app.command(name="graph", help="Build the local graph or export resolved data to Neo4j.")
 def graph_command(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -75,7 +77,7 @@ def graph_command(
     typer.echo(json.dumps(stats, ensure_ascii=False, indent=2))
 
 
-@app.command()
+@app.command(help="Rank graph bridges for evidence-led human review.")
 def discover(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     top: int = typer.Option(10, "--top"),
@@ -103,7 +105,7 @@ def discover(
             typer.echo(f"   - {evidence['source_side']} {evidence['url']}: {quote}")
 
 
-@app.command()
+@app.command(help="Emit auditable anti-apophenia scoring reports.")
 def score(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     top: int = typer.Option(10, "--top"),
@@ -116,7 +118,7 @@ def score(
     typer.echo(json.dumps(reports, ensure_ascii=False, indent=2))
 
 
-@app.command()
+@app.command(help="Generate low-attention and official-corpus review signals.")
 def signals(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     json_output: bool = typer.Option(False, "--json"),
@@ -142,7 +144,7 @@ def signals(
         )
 
 
-@app.command()
+@app.command(help="Run the complete local SQLite research workflow.")
 def run(
     config: Path = typer.Option(Path("config/sources.yaml"), "--config", "-c"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),

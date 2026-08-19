@@ -138,8 +138,8 @@ class HTTPFetcher:
             or any(marker in normalized.lower() for marker in placeholder_markers)
         ):
             raise InvalidUserAgent(
-                "A descriptive RED_PRIVADA_USER_AGENT with a real contact URL is required "
-                "before network collection"
+                "A descriptive EVIDENCE_GRAPH_USER_AGENT with a real contact URL is required "
+                "before network collection (RED_PRIVADA_USER_AGENT remains a compatibility alias)"
             )
 
     def _rate_limit(self) -> None:
