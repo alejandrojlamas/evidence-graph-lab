@@ -8,6 +8,7 @@ from red_privada.models import GraphConfig, Neo4jConfig, SourceConfig
 
 
 def test_default_config_is_local_and_sources_are_opt_in(monkeypatch) -> None:
+    monkeypatch.delenv("EVIDENCE_GRAPH_USER_AGENT", raising=False)
     monkeypatch.delenv("RED_PRIVADA_USER_AGENT", raising=False)
     monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
@@ -19,6 +20,18 @@ def test_default_config_is_local_and_sources_are_opt_in(monkeypatch) -> None:
     assert not config.project.allow_robots_unavailable
     assert config.sources
     assert all(not source.enabled for source in config.sources)
+
+
+def test_legacy_user_agent_environment_variable_remains_compatible(monkeypatch) -> None:
+    monkeypatch.delenv("EVIDENCE_GRAPH_USER_AGENT", raising=False)
+    monkeypatch.setenv(
+        "RED_PRIVADA_USER_AGENT",
+        "EvidenceGraphLab/0.1 (+https://example.org/contact)",
+    )
+
+    config = load_config("config/sources.yaml")
+
+    assert config.project.user_agent == "EvidenceGraphLab/0.1 (+https://example.org/contact)"
 
 
 def test_new_source_is_disabled_unless_explicitly_enabled() -> None:

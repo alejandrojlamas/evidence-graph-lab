@@ -54,7 +54,7 @@ class ProjectConfig(BaseModel):
     request_delay_seconds: float = 1.0
     allow_robots_unavailable: bool = False
     cache_dir: str = "data/cache"
-    database_path: str = "data/state/red_privada.sqlite"
+    database_path: str = "data/state/evidence_graph_lab.sqlite"
     output_dir: str = "data/output"
 
 
@@ -66,7 +66,7 @@ class LLMConfig(BaseModel):
     max_output_tokens: int = 5000
     max_chars_per_document: int = 18000
     thinking: Literal["enabled", "disabled"] = "disabled"
-    user_id: str = "red-privada-extractor"
+    user_id: str = "evidence-graph-lab-extractor"
     cache_extractions: bool = True
 
 
@@ -122,6 +122,12 @@ class SignalsConfig(BaseModel):
     official_side: str = "official_government"
     denial_keywords: list[str] = Field(
         default_factory=lambda: [
+            "not true",
+            "is false",
+            "false",
+            "denied",
+            "rejected",
+            "clarified",
             "no es cierto",
             "es falso",
             "falso",

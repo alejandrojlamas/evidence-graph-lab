@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SignalsAgent:
-    """Prioriza señales de baja atención, novedad estructural y lectura oficial."""
+    """Prioritize low-attention, structural-novelty, and official-corpus signals."""
 
     def __init__(self, config: AppConfig, store: SQLiteStore, graph: SQLiteGraph):
         self.config = config
@@ -102,8 +102,8 @@ class SignalsAgent:
                     novelty_components=components,
                     evidence=[_evidence_payload(item) for item in selected[:5]],
                     rationale=(
-                        "Documento de baja atención relativa con aristas raras o estructuralmente "
-                        "novedosas. Es una pista de lectura, no una tesis."
+                        "A relatively low-attention document with rare or structurally novel "
+                        "edges. This is a reading lead, not a thesis."
                     ),
                 )
             )
@@ -196,12 +196,12 @@ class SignalsAgent:
                 continue
 
             caveats = [
-                "Lectura textual de ventana: no implica omision deliberada ni falsedad."
+                "Textual window comparison: it does not imply deliberate omission or falsehood."
             ]
             if official_docs and _latest_doc_dt(official_docs) < _earliest_evidence_dt(evidence):
-                caveats.append("La fuente oficial disponible precede a la mencion no oficial.")
+                caveats.append("The available official source predates the non-official mention.")
             if not official_docs:
-                caveats.append("No hay documentos oficiales en la ventana configurada.")
+                caveats.append("There are no official documents in the configured window.")
 
             readings.append(
                 MorningReading(

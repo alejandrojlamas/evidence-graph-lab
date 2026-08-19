@@ -57,22 +57,23 @@ class DeepSeekExtractor:
             {
                 "role": "system",
                 "content": (
-                    "Eres un extractor de entidades y relaciones para investigacion periodistica. "
-                    "Devuelve solo JSON valido. No inventes nombres ni conexiones. Toda entidad y "
-                    "relacion debe incluir un quote textual copiado del documento. Si no hay quote, "
-                    "omite el item. Distingue evidence de inference; usa evidence solo cuando el "
-                    "fragmento sostiene directamente la relacion."
+                    "You extract entities and relationships for evidence-led research. Return only "
+                    "valid JSON. Never invent names or connections. Every entity and relationship "
+                    "must include a verbatim quote copied from the document; omit any item without "
+                    "one. Distinguish evidence from inference, and use evidence only when the excerpt "
+                    "directly supports the relationship. Preserve names and quotes in their source "
+                    "language."
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    "Extrae entidades y relaciones tipadas del documento. "
-                    "El JSON debe ajustarse a este schema Pydantic:\n"
+                    "Extract typed entities and relationships from the document. "
+                    "The JSON must conform to this Pydantic schema:\n"
                     f"{json.dumps(schema, ensure_ascii=False)}\n\n"
                     f"document_id={document.id}\ntext_hash={document.text_hash}\n"
                     f"source_side={document.source_side}\nurl={document.url}\n\n"
-                    f"TEXTO:\n{text}"
+                    f"DOCUMENT TEXT:\n{text}"
                 ),
             },
         ]
@@ -137,7 +138,8 @@ class DevHeuristicExtractor:
             entities=entities,
             relations=relations,
             warnings=[
-                "Extractor heuristico de desarrollo: relaciones CO_MENTIONED_WITH no prueban mas que co-mencion textual."
+                "Development heuristic extractor: CO_MENTIONED_WITH relationships establish only "
+                "textual co-occurrence."
             ],
         )
 

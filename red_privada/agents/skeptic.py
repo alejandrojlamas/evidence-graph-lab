@@ -20,7 +20,7 @@ from red_privada.models import (
 
 
 class SkepticAgent:
-    """Anti-apofenia: de puente llamativo a pista degradada o revisable."""
+    """Apply anti-apophenia checks before promoting a graph bridge for review."""
 
     def __init__(self, graph: SQLiteGraph, config: ScoringConfig):
         self.graph = graph
@@ -175,9 +175,9 @@ class SkepticAgent:
             type_score=type_score,
             degree_penalty=degree_penalty,
             minimal_claim=(
-                f"{candidate.entity_name} aparece como entidad puente entre "
-                f"{', '.join(candidate.source_sides) or 'fuentes no clasificadas'}; "
-                "la afirmacion especifica requiere verificacion humana."
+                f"{candidate.entity_name} appears as a bridge entity across "
+                f"{', '.join(candidate.source_sides) or 'unclassified sources'}; "
+                "the specific claim requires human verification."
             ),
             notes=notes,
         )
@@ -320,13 +320,13 @@ class SkepticAgent:
     ) -> list[str]:
         caveats: list[str] = []
         if not independence.passed:
-            caveats.append("La convergencia independiente no alcanza umbral.")
+            caveats.append("Independent convergence does not reach the configured threshold.")
         if not null_model.passed:
-            caveats.append("La intermediacion no supera con claridad el modelo nulo.")
+            caveats.append("Betweenness does not clearly exceed the null model.")
         if not specificity.passed:
-            caveats.append("La afirmacion sigue siendo demasiado amplia.")
+            caveats.append("The claim remains too broad.")
         if not temporal.passed:
-            caveats.append("No hay anomalia temporal fuerte en esta ventana.")
+            caveats.append("There is no strong temporal anomaly in this window.")
         return caveats
 
     @staticmethod
@@ -337,12 +337,12 @@ class SkepticAgent:
     ) -> str:
         if len(independence.source_sides) >= 2:
             return (
-                f"La explicacion minima es una convergencia tematica publica alrededor de "
-                f"{candidate.entity_name}; no implica coordinacion ni causalidad."
+                f"The simplest explanation is public thematic convergence around "
+                f"{candidate.entity_name}; it does not imply coordination or causality."
             )
         return (
-            f"La explicacion minima es prominencia local de {candidate.entity_name} dentro de "
-            "una misma familia de fuentes."
+            f"The simplest explanation is local prominence of {candidate.entity_name} within "
+            "one source family."
         )
 
 

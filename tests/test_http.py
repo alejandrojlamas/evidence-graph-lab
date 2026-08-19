@@ -7,7 +7,7 @@ import pytest
 
 from red_privada.http import HTTPFetcher, InvalidUserAgent, RobotsDenied
 
-VALID_USER_AGENT = "RedPrivadaBot/0.1 (+https://github.com/alejandrojlamas/Red-privada)"
+VALID_USER_AGENT = "EvidenceGraphLab/0.1 (+https://github.com/alejandrojlamas/evidence-graph-lab)"
 
 
 def test_missing_robots_denies_fetch_by_default(tmp_path) -> None:
@@ -93,9 +93,9 @@ def test_override_does_not_bypass_robots_access_denial(tmp_path, status_code: in
     "user_agent",
     [
         "",
-        "RedPrivadaBot/0.1",
-        "RedPrivadaBot/0.1 (contact: configure@example.org)",
-        "RedPrivadaBot/0.1 (+https://example.org/contact)",
+        "EvidenceGraphLab/0.1",
+        "EvidenceGraphLab/0.1 (contact: configure@example.org)",
+        "EvidenceGraphLab/0.1 (+https://example.org/contact)",
     ],
 )
 def test_network_collection_requires_real_contact_url(tmp_path, user_agent: str) -> None:

@@ -10,13 +10,22 @@ import yaml
 from red_privada.models import AppConfig
 
 ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)(?::-([^}]*))?\}")
+ENV_COMPATIBILITY_ALIASES = {
+    "EVIDENCE_GRAPH_USER_AGENT": "RED_PRIVADA_USER_AGENT",
+}
 
 
 def _expand_env(value: Any) -> Any:
     if isinstance(value, str):
+
         def replace(match: re.Match[str]) -> str:
             name, default = match.group(1), match.group(2)
-            return os.environ.get(name, default or "")
+            if value := os.environ.get(name):
+                return value
+            legacy_name = ENV_COMPATIBILITY_ALIASES.get(name)
+            if legacy_name and (legacy_value := os.environ.get(legacy_name)):
+                return legacy_value
+            return default or ""
 
         return ENV_PATTERN.sub(replace, value)
     if isinstance(value, list):
@@ -30,4 +39,3 @@ def load_config(path: str | Path) -> AppConfig:
     with Path(path).open("r", encoding="utf-8") as handle:
         raw = yaml.safe_load(handle)
     return AppConfig.model_validate(_expand_env(raw))
-
