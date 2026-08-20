@@ -23,7 +23,6 @@ class EntityResolver:
         self.config = config
         self.entities: dict[str, CanonicalEntity] = {}
         self.alias_to_id: dict[tuple[str, EntityType], str] = {}
-        self._embedding_model = None
         self._seed_aliases()
 
     def resolve_extractions(
@@ -57,7 +56,10 @@ class EntityResolver:
         for extraction in extractions:
             document = documents_by_id.get(extraction.document_id)
             if not document:
-                LOGGER.warning("missing document for extraction document_id=%s", extraction.document_id)
+                LOGGER.warning(
+                    "falta el documento asociado a la extracción document_id=%s",
+                    extraction.document_id,
+                )
                 continue
             for relation in extraction.relations:
                 resolved_relations.append(self.resolve_relation(document, extraction, relation))
@@ -76,7 +78,7 @@ class EntityResolver:
             canonical, score = candidate
             self._add_alias(canonical, entity.name)
             LOGGER.info(
-                "resolved alias=%s canonical=%s score=%.3f",
+                "alias resuelto=%s canonical=%s score=%.3f",
                 entity.name,
                 canonical.canonical_name,
                 score,
@@ -84,7 +86,9 @@ class EntityResolver:
             return canonical
 
         canonical_name = entity.name
-        canonical_id = "ent_" + stable_hash(entity.entity_type.value, normalize_name(canonical_name), length=24)
+        canonical_id = "ent_" + stable_hash(
+            entity.entity_type.value, normalize_name(canonical_name), length=24
+        )
         canonical = CanonicalEntity(
             canonical_id=canonical_id,
             canonical_name=canonical_name,
@@ -203,4 +207,3 @@ class EntityResolver:
                     if not best or score > best[1]:
                         best = (canonical, score)
         return best
-

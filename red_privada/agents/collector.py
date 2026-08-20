@@ -17,7 +17,7 @@ class CollectorAgent:
 
     def run(self) -> list[RawDocument]:
         if not any(source.enabled for source in self.config.sources):
-            LOGGER.info("collector skipped because no network sources are enabled")
+            LOGGER.info("recolección omitida porque no hay fuentes de red habilitadas")
             return []
         fetcher = HTTPFetcher(
             cache_dir=self.config.project.cache_dir,
@@ -33,5 +33,5 @@ class CollectorAgent:
                     documents.append(document)
         finally:
             fetcher.close()
-        LOGGER.info("collector finished documents=%s", len(documents))
+        LOGGER.info("recolección terminada documents=%s", len(documents))
         return documents

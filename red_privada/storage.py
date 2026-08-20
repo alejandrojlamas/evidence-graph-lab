@@ -113,17 +113,37 @@ class SQLiteStore:
             row = conn.execute("SELECT * FROM documents WHERE id = ?", (document_id,)).fetchone()
         return self._row_to_document(row) if row else None
 
-    def get_extraction(self, document_id: str, expected_hash: str) -> DocumentExtraction | None:
+    def get_extraction(
+        self,
+        document_id: str,
+        expected_hash: str,
+        *,
+        expected_provider: str,
+        expected_model: str,
+        expected_policy_fingerprint: str,
+    ) -> DocumentExtraction | None:
+        self._require_current_policy(expected_policy_fingerprint)
         with self.connect() as conn:
             row = conn.execute(
-                "SELECT payload_json, text_hash FROM extractions WHERE document_id = ?",
+                """
+                SELECT document_id, text_hash, provider, model, payload_json
+                FROM extractions
+                WHERE document_id = ?
+                """,
                 (document_id,),
             ).fetchone()
-        if not row or row["text_hash"] != expected_hash:
+        if not row:
             return None
-        return DocumentExtraction.model_validate_json(row["payload_json"])
+        return self._validated_cached_extraction(
+            row,
+            expected_hash=expected_hash,
+            expected_provider=expected_provider,
+            expected_model=expected_model,
+            expected_policy_fingerprint=expected_policy_fingerprint,
+        )
 
     def upsert_extraction(self, extraction: DocumentExtraction) -> None:
+        self._require_current_policy(extraction.cache_policy_fingerprint)
         with self.connect() as conn:
             conn.execute(
                 """
@@ -148,10 +168,75 @@ class SQLiteStore:
                 ),
             )
 
-    def list_extractions(self) -> list[DocumentExtraction]:
+    def list_extractions(
+        self,
+        *,
+        expected_provider: str,
+        expected_model: str,
+        expected_policy_fingerprint: str,
+    ) -> list[DocumentExtraction]:
+        self._require_current_policy(expected_policy_fingerprint)
         with self.connect() as conn:
-            rows = conn.execute("SELECT payload_json FROM extractions ORDER BY document_id").fetchall()
-        return [DocumentExtraction.model_validate_json(row["payload_json"]) for row in rows]
+            rows = conn.execute(
+                """
+                SELECT
+                  e.document_id,
+                  e.text_hash,
+                  e.provider,
+                  e.model,
+                  e.payload_json,
+                  d.text_hash AS current_text_hash
+                FROM extractions AS e
+                JOIN documents AS d ON d.id = e.document_id
+                ORDER BY e.document_id
+                """
+            ).fetchall()
+        extractions: list[DocumentExtraction] = []
+        for row in rows:
+            extraction = self._validated_cached_extraction(
+                row,
+                expected_hash=row["current_text_hash"],
+                expected_provider=expected_provider,
+                expected_model=expected_model,
+                expected_policy_fingerprint=expected_policy_fingerprint,
+            )
+            if extraction:
+                extractions.append(extraction)
+        return extractions
+
+    @staticmethod
+    def _require_current_policy(policy_fingerprint: str) -> None:
+        if not policy_fingerprint.strip() or policy_fingerprint == "legacy":
+            raise ValueError("la extracción no tiene una política de caché vigente")
+
+    @staticmethod
+    def _validated_cached_extraction(
+        row: sqlite3.Row,
+        *,
+        expected_hash: str,
+        expected_provider: str,
+        expected_model: str,
+        expected_policy_fingerprint: str,
+    ) -> DocumentExtraction | None:
+        if (
+            row["text_hash"] != expected_hash
+            or row["provider"] != expected_provider
+            or row["model"] != expected_model
+        ):
+            return None
+        try:
+            extraction = DocumentExtraction.model_validate_json(row["payload_json"])
+        except ValueError:
+            return None
+        if (
+            extraction.document_id != row["document_id"]
+            or extraction.text_hash != row["text_hash"]
+            or extraction.provider != row["provider"]
+            or extraction.model != row["model"]
+            or extraction.cache_policy_fingerprint != expected_policy_fingerprint
+        ):
+            return None
+        return extraction
 
     @staticmethod
     def _row_to_document(row: sqlite3.Row) -> RawDocument:
@@ -163,10 +248,11 @@ class SQLiteStore:
             url=row["url"],
             title=row["title"],
             author=row["author"],
-            published_at=datetime.fromisoformat(row["published_at"]) if row["published_at"] else None,
+            published_at=datetime.fromisoformat(row["published_at"])
+            if row["published_at"]
+            else None,
             fetched_at=datetime.fromisoformat(row["fetched_at"]),
             text=row["text"],
             raw_html_path=row["raw_html_path"],
             metadata=json.loads(row["metadata_json"]),
         )
-

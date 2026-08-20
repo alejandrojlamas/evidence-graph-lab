@@ -27,7 +27,7 @@ def build_collectors(config: AppConfig, fetcher: HTTPFetcher) -> list[BaseCollec
     collectors: list[BaseCollector] = []
     for source in config.sources:
         if not source.enabled:
-            LOGGER.info("source disabled name=%s note=%s", source.name, source.note)
+            LOGGER.info("fuente deshabilitada name=%s note=%s", source.name, source.note)
             continue
         if source.kind == "gob_presidency":
             collectors.append(GobPresidencyCollector(source, fetcher))
@@ -36,5 +36,5 @@ def build_collectors(config: AppConfig, fetcher: HTTPFetcher) -> list[BaseCollec
         elif source.kind in {"sitemap_column", "listing_column"}:
             collectors.append(WebColumnCollector(source, fetcher))
         else:
-            LOGGER.warning("unknown source kind name=%s kind=%s", source.name, source.kind)
+            LOGGER.warning("tipo de fuente desconocido name=%s kind=%s", source.name, source.kind)
     return collectors

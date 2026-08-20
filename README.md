@@ -1,73 +1,103 @@
-# Evidence Graph Lab
+<p align="center">
+  <img src="docs/assets/brand/red-privada-social-preview.png" alt="Red Privada — cartografía de evidencia para investigación asistida" width="100%">
+</p>
 
-[![CI](https://github.com/alejandrojlamas/evidence-graph-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/alejandrojlamas/evidence-graph-lab/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+# Red Privada
+
+[![CI](https://github.com/alejandrojlamas/red-privada/actions/workflows/ci.yml/badge.svg)](https://github.com/alejandrojlamas/red-privada/actions/workflows/ci.yml)
+[![Licencia: Apache-2.0](https://img.shields.io/badge/Licencia-Apache--2.0-3F5A50.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![Estado: alfa](https://img.shields.io/badge/Estado-alfa-6E3F35.svg)](#estado-del-proyecto)
 
-A reproducible applied-AI research lab for exploring relationships between entities in
-public-interest corpora. Evidence Graph Lab collects operator-approved sources, preserves
-provenance for every relationship, and prioritizes research leads through graph analysis and
-controls against spurious associations.
+**Cartografía de evidencia para investigación asistida.**
 
-The project is designed for AI-assisted research: it produces traceable evidence and review
-queues—not allegations, declarations of guilt, or automated journalistic conclusions.
+Red Privada es un laboratorio personal de IA aplicada para explorar relaciones entre entidades
+en corpus de interés público. Reúne únicamente fuentes habilitadas por el operador, conserva la
+procedencia de cada relación y ordena pistas para una revisión humana informada.
 
-## What it provides
+> [!IMPORTANT]
+> **Un mapa no es un veredicto.** Una coaparición no demuestra relación, intención, causalidad ni
+> responsabilidad. Los resultados son rutas de lectura, no conclusiones automatizadas.
 
-- Responsible collection with caching, per-source limits, and `robots.txt` enforcement.
-- Structured extraction with mandatory verbatim quotes and Pydantic validation.
-- Alias- and similarity-based identity resolution, with optional local embeddings.
-- An idempotent graph where every edge retains its document, URL, and evidence excerpt.
-- Anti-apophenia ranking based on source independence, a null model, specificity, and temporal
-  concentration.
-- Exploratory signals for low-attention documents, structural novelty, and comparison with an
-  official corpus.
-- SQLite for the complete local workflow, plus optional graph export to Neo4j.
+El nombre rinde un homenaje independiente a **Manuel Buendía**, autor de la columna periodística
+*Red Privada*, y al rigor técnico y ético con el que ejerció el oficio. La
+[UNAM documenta ese legado](https://www.dgcs.unam.mx/boletin/bdboletin/2021_503.html). Este
+proyecto no está afiliado con su familia, fundación, archivos, medios ni titulares de derechos.
 
-## Architecture
+## Qué hace
+
+- Recolecta fuentes públicas autorizadas con caché, límites de descarga por fuente y política
+  cerrada de `robots.txt`.
+- Extrae entidades y relaciones con citas textuales obligatorias y validación mediante Pydantic.
+- Resuelve identidades por alias configurados y similitud textual conservadora.
+- Construye un grafo idempotente donde cada arista se puede rastrear hasta su documento, URL y
+  fragmento de evidencia.
+- Prioriza conexiones mediante independencia de fuentes, modelo nulo, especificidad y
+  concentración temporal.
+- Genera señales exploratorias de baja atención y novedad estructural para orientar lectura.
+- Ejecuta el flujo local completo sobre SQLite y permite una exportación experimental a Neo4j.
+
+## Principios de diseño
+
+| Principio | Invariante |
+| --- | --- |
+| Procedencia antes que persuasión | Toda relación conserva evidencia rastreable. |
+| IA bajo control | El extractor local es predeterminado; un proveedor externo exige activación explícita. |
+| Escepticismo incorporado | Una conexión llamativa también puede ser repetición o sesgo del corpus. |
+| Fuentes por activación explícita | No hay fuentes de red activas por defecto. |
+| Revisión humana | El sistema organiza evidencia; no acusa, certifica ni decide. |
+
+## Cómo se construye el mapa
 
 ```mermaid
 flowchart LR
-    A[Operator-enabled sources] --> B[Collector + robots.txt + cache]
-    B --> C[(SQLite: documents and extractions)]
-    C --> D[Local or optional LLM extractor]
-    D --> E[Entity resolution]
-    E --> F[(Provenance-aware graph)]
-    F --> G[Analyst + Skeptic]
-    F --> H[Review signals]
-    G --> I[Reviewable JSON]
-    H --> I
-    E -. optional export .-> J[(Local Neo4j)]
+    A[Fuentes habilitadas] --> B[Colector<br/>robots.txt + límites + caché]
+    B --> C[(SQLite<br/>documentos y extracciones)]
+    C --> D[Extractor local<br/>o LLM opcional]
+    D --> E[Resolución de entidades]
+    E --> F[(Grafo con procedencia)]
+    F --> G[Analista]
+    F --> H[Señales de lectura]
+    G --> I[Escéptico]
+    I --> J[Cola de revisión humana]
+    H --> J
+    E -. exportación experimental .-> K[(Neo4j local)]
 ```
 
-The `run` command and the `discover`, `score`, and `signals` analyses operate end to end on
-SQLite. When `graph.backend` is set to `neo4j`, the `graph` command exports resolved entities and
-relationships to Neo4j; later analyses still read SQLite. The current implementation does not
-automatically synchronize the two backends.
+### Los roles del sistema
 
-## Safe quick start
+- **Colector:** obtiene solo fuentes habilitadas y aplica límites de acceso.
+- **Extractor:** propone entidades y relaciones respaldadas por fragmentos textuales.
+- **Resolutor:** agrupa alias configurados y coincidencias textuales conservadoras.
+- **Cartógrafo:** convierte las relaciones resueltas en un grafo reproducible.
+- **Analista:** encuentra nodos puente que merecen lectura.
+- **Escéptico:** degrada coincidencias débiles, correlacionadas o previsibles.
 
-Requirements: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), and Docker only if you choose
-Neo4j.
+El comando `run` y los análisis `discover`, `score` y `signals` trabajan de punta a punta sobre
+SQLite. El motor Neo4j recibe una exportación del grafo; los análisis posteriores continúan
+leyendo SQLite y no existe sincronización bidireccional.
+
+## Primer recorrido seguro
+
+Requisitos: Python 3.11+, [`uv`](https://docs.astral.sh/uv/) y, únicamente para Neo4j, Docker.
 
 ```bash
-git clone https://github.com/alejandrojlamas/evidence-graph-lab.git
-cd evidence-graph-lab
+git clone https://github.com/alejandrojlamas/red-privada.git
+cd red-privada
 cp .env.example .env
 make install
 make test
 ```
 
-The repository starts in a safe mode: every network source is disabled, the extractor is local,
-and SQLite is the backend. Tests require neither credentials nor internet access.
+El proyecto arranca en modo seguro: todas las fuentes de red están deshabilitadas, el extractor
+es local y SQLite es el motor. Las pruebas no necesitan credenciales ni internet.
 
-To run real collection:
+Para ejecutar una recolección real:
 
-1. Review each source's terms, copyright, and automation policy.
-2. Edit `config/sources.yaml` and set `enabled: true` only for authorized sources.
-3. Set `EVIDENCE_GRAPH_USER_AGENT` in `.env` to a descriptive value with a real contact URL. The
-   example points to this repository and contains no personal email address.
-4. Load the environment and run the pipeline.
+1. Revisa términos, copyright y política de automatización de cada fuente.
+2. Cambia `enabled: true` solo en entradas autorizadas de `config/sources.yaml`.
+3. Define `RED_PRIVADA_USER_AGENT` con una URL de contacto real que controles.
+4. Carga el entorno y ejecuta el flujo.
 
 ```bash
 set -a
@@ -82,13 +112,31 @@ make score
 make signals
 ```
 
-You can also use `make run` to execute the complete SQLite workflow. If no source is enabled and
-there are no stored documents, the pipeline intentionally produces empty review queues.
+`make run` encadena el flujo SQLite completo. Sin fuentes activas ni documentos almacenados,
+produce colas vacías de manera intencional.
 
-## Optional LLM extraction
+## Resultados para revisión
 
-`llm.provider: dev` is the default and never calls an external service. It recognizes only the
-configured entities and creates conservative co-mentions. To explicitly use DeepSeek:
+Los nombres técnicos se mantienen estables para facilitar automatizaciones:
+
+| Archivo | Contenido |
+| --- | --- |
+| `bridge_candidates.json` | Entidades puente, evidencia y dictamen del Escéptico. |
+| `skeptic_reports.json` | Independencia, modelo nulo, especificidad y señal temporal. |
+| `small_notes.json` | Documentos de atención relativa baja con novedad estructural. |
+| `morning_readings.json` | Posibles ausencias o correcciones textuales en la ventana oficial. |
+| `signals.json` | Salida combinada de las señales de lectura. |
+
+Consulta [el método de puntuación](docs/SCORING.md), [las señales](docs/SIGNALS.md) y
+[el esquema del grafo](docs/GRAPH_SCHEMA.md).
+
+## Extracción opcional con IA
+
+`llm.provider: dev` es el valor predeterminado y nunca llama a un servicio externo. Reconoce solo
+las entidades configuradas y genera co-menciones conservadoras.
+
+<details>
+<summary>Activar DeepSeek de forma explícita</summary>
 
 ```yaml
 llm:
@@ -100,88 +148,87 @@ export DEEPSEEK_API_KEY="..."
 make extract
 ```
 
-With `provider: deepseek`, the system sends up to `max_chars_per_document` characters of the
-document text to the configured endpoint, along with the document identifier and hash, URL, and
-`source_side`. Review the provider's terms, residency, and retention policies before using
-sensitive material. `provider: auto` is also available, but it selects DeepSeek whenever
-`DEEPSEEK_API_KEY` is present; use it only if you accept that implicit choice.
+Con `provider: deepseek`, el sistema transmite al endpoint configurado parte del documento,
+además de identificadores técnicos, URL y etiqueta de fuente. Revisa las condiciones, residencia
+y retención del proveedor antes de utilizar material sensible. `provider: auto` también existe,
+pero selecciona DeepSeek cuando detecta `DEEPSEEK_API_KEY`; úsalo solo si aceptas esa decisión
+implícita.
 
-## Optional Neo4j backend
+Las relaciones propuestas por DeepSeek cuyo predicado no sea la coaparición canónica se guardan
+como `inference`: permanecen visibles para revisión, pero no reciben bonificaciones de
+especificidad ni de novedad estructural.
 
-Neo4j ports bind only to `127.0.0.1`. The repository includes neither a password nor a predictable
-fallback value.
+</details>
+
+## Neo4j experimental
+
+Los puertos se publican únicamente en `127.0.0.1`; el repositorio no contiene contraseñas ni
+valores predecibles de respaldo.
 
 ```bash
 openssl rand -base64 32
-# Paste the result into NEO4J_PASSWORD in .env.
+# Copia el resultado en NEO4J_PASSWORD dentro de .env.
 docker compose config >/dev/null
 docker compose up -d neo4j
 ```
 
-Then load `.env`, set `graph.backend: neo4j`, and run `make graph`. Docker Compose deliberately
-fails when `NEO4J_PASSWORD` is empty or missing. Exposing Neo4j beyond the local machine requires
-additional network controls, TLS, authentication, and backups that this project does not
-configure.
+Después carga `.env`, cambia `graph.backend: neo4j` y ejecuta `make graph`. Exponer Neo4j fuera
+del equipo requiere controles adicionales de red, TLS, autenticación y copias de seguridad que
+este proyecto no configura.
 
-## Collection, `robots.txt`, and sources
+La exportación a Neo4j es incremental y no reconciliada: después de corregir o volver a extraer
+un documento puede conservar relaciones de una exportación anterior. Para obtener una
+instantánea limpia, utiliza una base o un volumen dedicado nuevo; no apuntes esta función a una
+base compartida con datos ajenos al proyecto.
 
-The entries in `config/sources.yaml` are disabled examples. Enabling one is an explicit operator
-decision; its presence does not claim that automated access remains permitted.
+## Fuentes, permisos y `robots.txt`
 
-If `robots.txt` is missing, empty, unusable, or unavailable, Evidence Graph Lab blocks the
-download. `project.allow_robots_unavailable: true` permits collection only in that unavailable
-state and should be reserved for a source you own or are explicitly authorized to access. The
-override never bypasses a valid `Disallow` rule or an HTTP 401/403 response.
+Las fuentes incluidas son ejemplos deshabilitados. Su presencia no afirma que la automatización
+siga permitida. Si `robots.txt` falta, no contiene reglas utilizables o no puede consultarse, Red
+Privada bloquea la descarga. El ajuste `project.allow_robots_unavailable: true` está reservado
+para una fuente propia o con autorización expresa y nunca evita un `Disallow` válido ni una
+respuesta 401/403.
 
-Complying with `robots.txt` does not replace site terms, a license, or permission from the rights
-holder. Do not use this project to bypass authentication, paywalls, or access controls. The
-Apache-2.0 license covers this repository's code; it grants no rights to third-party articles,
-feeds, quotes, or corpora. Preserve attribution, reasonable rate limits, and a suitable legal
-basis for your use.
+Cumplir `robots.txt` no sustituye términos, licencia ni permiso. El proyecto no debe emplearse
+para evadir autenticación, muros de pago o controles de acceso. La licencia Apache-2.0 cubre este
+código y su documentación original; no concede derechos sobre corpus de terceros.
 
-## Local data and retention
+## Datos locales y retención
 
-The project stores the following without encryption or automatic expiration:
+El proyecto guarda, sin cifrado ni caducidad automática:
 
-- downloaded responses in `data/cache/`;
-- text, metadata, and extractions in `data/state/evidence_graph_lab.sqlite`;
-- JSON reports in `data/output/`;
-- container data in the `neo4j_data` and `neo4j_logs` volumes when Neo4j is used.
+- respuestas descargadas en `data/cache/`;
+- documentos, metadatos y extracciones en SQLite;
+- reportes JSON en `data/output/`;
+- datos del contenedor en los volúmenes de Neo4j, si se habilita.
 
-These paths are excluded from Git but remain the operator's responsibility. To remove SQLite data
-and project artifacts, stop running processes and delete only `data/cache/`, `data/state/`, and
-`data/output/`. Docker volumes require a separate operation and are not deleted when the container
-stops.
+Estas rutas están excluidas de Git, pero siguen bajo responsabilidad del operador. No introduzcas
+credenciales, corpus confidenciales ni datos personales en incidencias, pruebas o *commits*.
 
-## Outputs and human review
+## Límites y uso responsable
 
-- `bridge_candidates.json`: ranked bridge entities, evidence, and the Skeptic's verdict.
-- `skeptic_reports.json`: independence, null-model, specificity, and temporal-signal details.
-- `small_notes.json`: low-attention documents with structural novelty.
-- `morning_readings.json`: possible absences or textual corrections in the official window.
-- `signals.json`: the combined review-signal output.
+- No verifica por sí mismo la verdad, actualidad ni contexto completo de un documento.
+- Una fuente etiquetada como distinta no es necesariamente independiente.
+- Una ausencia textual no implica silencio deliberado.
+- La centralidad de un nodo puede reflejar popularidad o sesgo de muestreo.
+- La extracción local no descubre entidades abiertas fuera del catálogo configurado.
+- Los límites de descarga no convierten el recolector en un *sandbox*; ejecuta fuentes no
+  confiables en un entorno aislado y supervisado.
+- No debe utilizarse para decisiones adversas sobre personas.
 
-See the [scoring method](docs/SCORING.md), [review signals](docs/SIGNALS.md), and
-[graph schema](docs/GRAPH_SCHEMA.md).
+## Compatibilidad técnica
 
-Every output requires human review against the original source. A co-mention does not prove a
-relationship; a central node may reflect popularity or sampling bias; differently labeled sources
-are not necessarily independent; and textual absence does not imply deliberate silence. The
-system does not independently verify the truth, currency, or full context of a document and must
-not be used to make adverse decisions about people.
+La distribución y el comando principales son `red-privada`; `python -m red_privada` ofrece el
+punto de entrada por módulo. Durante la serie `0.x` se conservan `evidence-graph` y
+`python -m evidence_graph_lab` como alias compatibles. Las versiones anteriores siguen siendo
+legibles y las migraciones aditivas de SQLite se aplican automáticamente; los consumidores deben
+tratar el esquema y los campos JSON como una interfaz alfa todavía evolutiva.
 
-## Command and package compatibility
+## Estado del proyecto
 
-The public distribution is `evidence-graph-lab`, the primary command is `evidence-graph`, and
-`python -m evidence_graph_lab` provides the module entry point. The historical `red-privada`
-command and `red_privada` implementation package remain available as compatibility aliases for
-early users. New command-line integrations should use the Evidence Graph Lab names.
-
-If you want to continue using an existing pre-rename database, set `project.database_path` to
-`data/state/red_privada.sqlite` in your local configuration. The new default uses
-`data/state/evidence_graph_lab.sqlite`.
-
-## Development
+Red Privada está en fase **alfa**. El flujo local SQLite está probado; las fuentes externas,
+DeepSeek y Neo4j requieren configuración y validación del operador en su propio entorno. No hay
+servicio alojado, interfaz web ni corpus incluido.
 
 ```bash
 make test
@@ -189,10 +236,20 @@ make lint
 make build
 ```
 
-Continuous integration runs the checks on Python 3.11 and 3.12. Vulnerability reports follow
-[SECURITY.md](SECURITY.md).
+La integración continua valida Python 3.11 y 3.12. Consulta [CONTRIBUTING.md](CONTRIBUTING.md)
+antes de proponer cambios y [SECURITY.md](SECURITY.md) para informar vulnerabilidades.
 
-## License
+## Por qué se llama Red Privada
 
-[Apache License 2.0](LICENSE). It applies to the software and original documentation in this
-repository, not to collected third-party content.
+Manuel Buendía convirtió su columna *Red Privada* en una referencia del periodismo de
+investigación mexicano. Este proyecto toma su nombre como homenaje al oficio de reconstruir
+relaciones con técnica, contexto, trazabilidad y criterio editorial.
+
+El homenaje se limita al nombre y a esos principios. La identidad visual es original y no
+reproduce retratos, firmas, columnas, facsímiles, cabeceras, citas ni materiales de archivo. Red
+Privada es un proyecto independiente, sin patrocinio ni respaldo institucional.
+
+## Licencia
+
+[Apache License 2.0](LICENSE). Se aplica al software y a la documentación original del
+repositorio, no al contenido recolectado de terceros.

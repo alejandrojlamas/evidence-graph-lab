@@ -11,8 +11,10 @@ from red_privada.models import AppConfig
 
 ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)(?::-([^}]*))?\}")
 ENV_COMPATIBILITY_ALIASES = {
-    "EVIDENCE_GRAPH_USER_AGENT": "RED_PRIVADA_USER_AGENT",
+    "RED_PRIVADA_USER_AGENT": "EVIDENCE_GRAPH_USER_AGENT",
 }
+CANONICAL_DATABASE_PATH = Path("data/state/red_privada.sqlite")
+LEGACY_DATABASE_PATH = Path("data/state/evidence_graph_lab.sqlite")
 
 
 def _expand_env(value: Any) -> Any:
@@ -38,4 +40,12 @@ def _expand_env(value: Any) -> Any:
 def load_config(path: str | Path) -> AppConfig:
     with Path(path).open("r", encoding="utf-8") as handle:
         raw = yaml.safe_load(handle)
-    return AppConfig.model_validate(_expand_env(raw))
+    config = AppConfig.model_validate(_expand_env(raw))
+    configured_path = Path(config.project.database_path)
+    if (
+        configured_path == CANONICAL_DATABASE_PATH
+        and not configured_path.exists()
+        and LEGACY_DATABASE_PATH.exists()
+    ):
+        config.project.database_path = str(LEGACY_DATABASE_PATH)
+    return config

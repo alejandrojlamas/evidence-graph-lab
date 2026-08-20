@@ -1,33 +1,39 @@
-# Security policy
+# Política de seguridad
 
-## Supported versions
+## Versiones con soporte
 
-Evidence Graph Lab is currently an alpha project. Only the `main` branch and the latest `0.1.x`
-release receive security fixes. Older versions are not maintained in parallel.
+Red Privada es actualmente un proyecto en fase alfa. Solo la rama `main` y la versión `0.1.x`
+más reciente reciben correcciones de seguridad. Las versiones anteriores no se mantienen en
+paralelo.
 
-## Reporting a vulnerability
+## Cómo informar una vulnerabilidad
 
-Do not publish exploitable details in a public issue. Use the private
-[GitHub Security Advisory form](https://github.com/alejandrojlamas/evidence-graph-lab/security/advisories/new).
+No publiques detalles que permitan explotar una vulnerabilidad en una incidencia pública. Utiliza
+el formulario privado de [avisos de seguridad de GitHub][security-advisories].
 
-When possible, include:
+Cuando sea posible, incluye:
 
-- the affected version or commit;
-- the expected impact and required conditions;
-- minimal reproduction steps;
-- known mitigations;
-- a GitHub contact channel for follow-up.
+- la versión o el *commit* afectado;
+- el impacto previsto y las condiciones necesarias;
+- los pasos mínimos de reproducción;
+- las mitigaciones conocidas;
+- un canal de contacto en GitHub para dar seguimiento.
 
-Do not attach real credentials, confidential corpora, or personal data. Reports will be reviewed
-in good faith, and responsible disclosure will be coordinated when a finding is confirmed. This
-project has no formal service-level agreement, so no specific response time is guaranteed.
+No adjuntes credenciales reales, corpus confidenciales ni datos personales. Los informes se
+revisarán de buena fe y, cuando se confirme un hallazgo, se coordinará una divulgación
+responsable. El proyecto no cuenta con un acuerdo formal de nivel de servicio, por lo que no se
+garantiza un plazo de respuesta específico.
 
-## Operational scope
+## Alcance operativo
 
-High-value reports include leaked credentials, `robots.txt` bypasses, unexpected network access,
-content injection into the extractor, exposed Neo4j services, and writes outside `data/`. Content
-or classification errors that are not security vulnerabilities may be reported through ordinary
-issues without including sensitive material.
+Son especialmente valiosos los informes sobre credenciales expuestas, elusión de las directivas
+de `robots.txt`, acceso de red inesperado, inyección de contenido en el extractor, servicios Neo4j
+expuestos y operaciones de escritura fuera de `data/`. Los errores de contenido o clasificación
+que no constituyan una vulnerabilidad de seguridad pueden notificarse mediante una incidencia
+ordinaria, siempre sin incluir material sensible.
 
-Credentials must remain outside the repository. If a credential enters a commit, revoke and
-rotate it immediately; deleting the text does not invalidate an already exposed key.
+Las credenciales deben permanecer fuera del repositorio. Si una credencial llega a incorporarse
+a un *commit*, revócala y rótala de inmediato: borrar el texto no invalida una clave que ya fue
+expuesta.
+
+[security-advisories]: https://github.com/alejandrojlamas/red-privada/security/advisories/new

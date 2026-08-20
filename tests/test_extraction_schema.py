@@ -30,4 +30,3 @@ def test_relation_accepts_evidence_quote() -> None:
         confidence=0.6,
     )
     assert relation.assertion_type == "evidence"
-

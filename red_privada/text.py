@@ -71,7 +71,10 @@ def split_sentences(text: str, max_sentence_chars: int = 650) -> list[str]:
             if len(sentence) <= max_sentence_chars:
                 sentences.append(sentence)
                 continue
-            chunks = [sentence[i : i + max_sentence_chars] for i in range(0, len(sentence), max_sentence_chars)]
+            chunks = [
+                sentence[i : i + max_sentence_chars]
+                for i in range(0, len(sentence), max_sentence_chars)
+            ]
             sentences.extend(normalize_ws(chunk) for chunk in chunks if normalize_ws(chunk))
     return sentences
 

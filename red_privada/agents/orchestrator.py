@@ -11,6 +11,7 @@ from red_privada.agents.collector import CollectorAgent
 from red_privada.agents.extractor import ExtractorAgent
 from red_privada.agents.signals import SignalsAgent
 from red_privada.graph.sqlite_graph import SQLiteGraph
+from red_privada.llm import extraction_cache_identity
 from red_privada.models import (
     AppConfig,
     BridgeCandidate,
@@ -57,10 +58,19 @@ class Orchestrator:
         return builder.compile()
 
     def _collect(self, state: PipelineState) -> PipelineState:
-        documents = CollectorAgent(self.config, self.store).run()
-        if not documents:
-            documents = self.store.list_documents()
-            LOGGER.info("collector returned no new docs, using stored documents=%s", len(documents))
+        collected = CollectorAgent(self.config, self.store).run()
+        documents = self.store.list_documents()
+        if not collected:
+            LOGGER.info(
+                "el colector no devolvió documentos nuevos; usando almacenados=%s",
+                len(documents),
+            )
+        elif len(documents) != len(collected):
+            LOGGER.info(
+                "documentos nuevos=%s; procesando corpus almacenado completo=%s",
+                len(collected),
+                len(documents),
+            )
         return {"documents": documents}
 
     def _extract(self, state: PipelineState) -> PipelineState:
@@ -70,7 +80,14 @@ class Orchestrator:
 
     def _map_graph(self, state: PipelineState) -> PipelineState:
         documents = state.get("documents") or self.store.list_documents()
-        extractions = state.get("extractions") or self.store.list_extractions()
+        extractions = state.get("extractions")
+        if extractions is None:
+            provider, model, policy_fingerprint = extraction_cache_identity(self.config)
+            extractions = self.store.list_extractions(
+                expected_provider=provider,
+                expected_model=model,
+                expected_policy_fingerprint=policy_fingerprint,
+            )
         stats = CartographerAgent(self.config, self.graph).run(documents, extractions)
         return {"graph_stats": stats}
 

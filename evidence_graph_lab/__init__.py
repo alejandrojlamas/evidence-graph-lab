@@ -1,8 +1,8 @@
-"""Public package facade for Evidence Graph Lab.
+"""Fachada compatible para el nombre temporal Evidence Graph Lab.
 
-The implementation remains in :mod:`red_privada` for compatibility with the initial 0.1
-release. New integrations should import :mod:`evidence_graph_lab` and use the
-``evidence-graph`` command.
+La identidad y la implementación canónicas viven en :mod:`red_privada`. Este paquete y el
+comando ``evidence-graph`` permanecen disponibles durante la serie 0.x para no romper
+integraciones creadas durante el cambio de nombre.
 """
 
 from red_privada import __version__

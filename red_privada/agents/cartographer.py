@@ -22,9 +22,15 @@ class CartographerAgent:
     ) -> dict[str, int]:
         entities, relations = self.resolver.resolve_extractions(documents, extractions)
         entity_count = self.graph.upsert_entities(entities)
-        edge_count, evidence_count = self.graph.upsert_relations(relations)
+        if isinstance(self.graph, SQLiteGraph):
+            edge_count, evidence_count = self.graph.upsert_relations(
+                relations,
+                replace_document_ids={document.id for document in documents},
+            )
+        else:
+            edge_count, evidence_count = self.graph.upsert_relations(relations)
         LOGGER.info(
-            "cartographer finished entities=%s edge_writes=%s evidence_writes=%s",
+            "cartografía terminada entities=%s edge_writes=%s evidence_writes=%s",
             entity_count,
             edge_count,
             evidence_count,
@@ -34,4 +40,3 @@ class CartographerAgent:
             "edge_writes": edge_count,
             "evidence_writes": evidence_count,
         }
-

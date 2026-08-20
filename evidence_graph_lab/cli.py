@@ -1,4 +1,4 @@
-"""Public Evidence Graph Lab command-line entry point."""
+"""Punto de entrada compatible para el nombre Evidence Graph Lab."""
 
 from red_privada.cli import app
 

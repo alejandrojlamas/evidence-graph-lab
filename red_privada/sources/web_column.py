@@ -28,7 +28,7 @@ class WebColumnCollector(BaseCollector):
             try:
                 document = self._fetch_article(url, rank)
             except Exception as exc:  # pragma: no cover - logged integration boundary
-                LOGGER.warning("failed fetching column url=%s error=%s", url, exc)
+                LOGGER.warning("falló la descarga de la columna url=%s error=%s", url, exc)
                 continue
             documents.append(document)
         return documents
@@ -41,9 +41,14 @@ class WebColumnCollector(BaseCollector):
             html, _, _ = self.fetcher.fetch(self.source.listing_url)
             urls = self._parse_listing(html, self.source.listing_url)
         else:
-            raise ValueError("web column source requires sitemap_url or listing_url")
+            raise ValueError("la fuente de columna web requiere sitemap_url o listing_url")
         filtered = [url for url in urls if self._allowed_url(url)]
-        LOGGER.info("column source=%s discovered=%s filtered=%s", self.source.name, len(urls), len(filtered))
+        LOGGER.info(
+            "fuente de columna=%s descubiertos=%s filtrados=%s",
+            self.source.name,
+            len(urls),
+            len(filtered),
+        )
         return filtered
 
     def _allowed_url(self, url: str) -> bool:
@@ -72,7 +77,7 @@ class WebColumnCollector(BaseCollector):
         if extraction_meta.get("skip_reason"):
             raise ValueError(extraction_meta["skip_reason"])
         if len(text) < 300:
-            raise ValueError("article text too short")
+            raise ValueError("el texto del artículo es demasiado breve")
         meta = extract_meta(html)
         json_meta = self._first_article_json_ld(html)
         title = (

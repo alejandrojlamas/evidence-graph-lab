@@ -60,7 +60,7 @@ class AnalystAgent:
             candidates = self._review_candidates(candidates)
         candidates = candidates[:top_n]
         self._write_output(candidates)
-        LOGGER.info("analyst bridges=%s", len(candidates))
+        LOGGER.info("puentes priorizados por el analista=%s", len(candidates))
         return candidates
 
     def _review_candidates(self, candidates: list[BridgeCandidate]) -> list[BridgeCandidate]:

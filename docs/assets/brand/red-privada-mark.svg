@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Símbolo de Red Privada</title>
+  <desc id="desc">Una columna editorial se transforma en una red de evidencia con forma de erre.</desc>
+  <rect width="256" height="256" rx="36" fill="#F3E8D0"/>
+  <path d="M70 42v172" fill="none" stroke="#1D2825" stroke-width="10" stroke-linecap="round"/>
+  <path d="M70 52h46c43 0 67 19 67 51s-24 51-67 51H70" fill="none" stroke="#3F5A50" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m123 154 66 62" fill="none" stroke="#1D2825" stroke-width="10" stroke-linecap="round"/>
+  <path d="M70 84h46m-46 34h78m-78 70h84" fill="none" stroke="#B8893E" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+  <g fill="#1D2825">
+    <circle cx="70" cy="52" r="9"/>
+    <circle cx="70" cy="118" r="9"/>
+    <circle cx="70" cy="188" r="9"/>
+    <circle cx="183" cy="103" r="9"/>
+    <circle cx="189" cy="216" r="9"/>
+  </g>
+  <circle cx="123" cy="154" r="11" fill="#6E3F35"/>
+</svg>

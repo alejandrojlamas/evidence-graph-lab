@@ -54,7 +54,7 @@ class ProjectConfig(BaseModel):
     request_delay_seconds: float = 1.0
     allow_robots_unavailable: bool = False
     cache_dir: str = "data/cache"
-    database_path: str = "data/state/evidence_graph_lab.sqlite"
+    database_path: str = "data/state/red_privada.sqlite"
     output_dir: str = "data/output"
 
 
@@ -66,15 +66,12 @@ class LLMConfig(BaseModel):
     max_output_tokens: int = 5000
     max_chars_per_document: int = 18000
     thinking: Literal["enabled", "disabled"] = "disabled"
-    user_id: str = "evidence-graph-lab-extractor"
+    user_id: str = "red-privada-extractor"
     cache_extractions: bool = True
 
 
 class ResolverConfig(BaseModel):
     similarity_threshold: float = 0.92
-    ambiguous_low: float = 0.84
-    use_embeddings: bool = False
-    embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     aliases: dict[str, list[str]] = Field(default_factory=dict)
 
 
@@ -92,7 +89,7 @@ class GraphConfig(BaseModel):
     @model_validator(mode="after")
     def require_neo4j_password(self) -> "GraphConfig":
         if self.backend == "neo4j" and not self.neo4j.password.strip():
-            raise ValueError("NEO4J_PASSWORD is required when graph.backend=neo4j")
+            raise ValueError("NEO4J_PASSWORD es obligatoria cuando graph.backend=neo4j")
         return self
 
 
@@ -175,7 +172,7 @@ class RawDocument(BaseModel):
     def not_blank(cls, value: str) -> str:
         value = normalize_ws(value)
         if not value:
-            raise ValueError("must not be blank")
+            raise ValueError("no puede quedar en blanco")
         return value
 
     @property
@@ -198,7 +195,7 @@ class ExtractedEntity(BaseModel):
     def required_text(cls, value: str) -> str:
         value = normalize_ws(value)
         if not value:
-            raise ValueError("must not be blank")
+            raise ValueError("no puede quedar en blanco")
         return value
 
 
@@ -217,7 +214,7 @@ class ExtractedRelation(BaseModel):
     def required_text(cls, value: str) -> str:
         value = normalize_ws(value)
         if not value:
-            raise ValueError("must not be blank")
+            raise ValueError("no puede quedar en blanco")
         return value
 
 
@@ -226,6 +223,7 @@ class DocumentExtraction(BaseModel):
     text_hash: str
     provider: str
     model: str
+    cache_policy_fingerprint: str = "legacy"
     entities: list[ExtractedEntity] = Field(default_factory=list)
     relations: list[ExtractedRelation] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

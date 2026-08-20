@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title desc">
+  <title id="title">Red Privada</title>
+  <desc id="desc">Cartografía de evidencia para investigación asistida. Homenaje independiente a Manuel Buendía.</desc>
+  <defs>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#111412" stop-opacity=".98"/>
+      <stop offset=".43" stop-color="#111412" stop-opacity=".92"/>
+      <stop offset=".70" stop-color="#111412" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#111412" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <image x="0" y="-40" width="1280" height="720" preserveAspectRatio="xMidYMid slice" xlink:href="red-privada-editorial-base.png"/>
+  <rect width="1280" height="640" fill="url(#shade)"/>
+  <g transform="translate(76 70)">
+    <g transform="scale(.23)">
+      <rect width="256" height="256" rx="36" fill="#F3E8D0"/>
+      <path d="M70 42v172" fill="none" stroke="#1D2825" stroke-width="10" stroke-linecap="round"/>
+      <path d="M70 52h46c43 0 67 19 67 51s-24 51-67 51H70" fill="none" stroke="#3F5A50" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="m123 154 66 62" fill="none" stroke="#1D2825" stroke-width="10" stroke-linecap="round"/>
+      <path d="M70 84h46m-46 34h78m-78 70h84" fill="none" stroke="#B8893E" stroke-width="3" stroke-linecap="round"/>
+      <g fill="#1D2825"><circle cx="70" cy="52" r="9"/><circle cx="70" cy="118" r="9"/><circle cx="70" cy="188" r="9"/><circle cx="183" cy="103" r="9"/><circle cx="189" cy="216" r="9"/></g>
+      <circle cx="123" cy="154" r="11" fill="#6E3F35"/>
+    </g>
+    <text x="82" y="22" fill="#F3E8D0" font-family="Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="3">LABORATORIO PERSONAL DE IA APLICADA</text>
+    <text x="0" y="155" fill="#F3E8D0" font-family="Charter, Georgia, serif" font-size="82" font-weight="700">Red Privada</text>
+    <rect x="0" y="183" width="88" height="5" rx="2.5" fill="#6E3F35"/>
+    <text x="0" y="238" fill="#F3E8D0" font-family="Arial, sans-serif" font-size="27" font-weight="600">Cartografía de evidencia para</text>
+    <text x="0" y="274" fill="#F3E8D0" font-family="Arial, sans-serif" font-size="27" font-weight="600">investigación asistida</text>
+    <text x="0" y="340" fill="#D6CDBB" font-family="Arial, sans-serif" font-size="19" letter-spacing=".8">FUENTES PÚBLICAS · PROCEDENCIA · REVISIÓN HUMANA</text>
+    <text x="0" y="425" fill="#B8893E" font-family="Charter, Georgia, serif" font-size="21" font-style="italic">Evidencia rastreable. Relaciones revisables.</text>
+    <text x="0" y="478" fill="#B8B2A6" font-family="Arial, sans-serif" font-size="15" letter-spacing=".7">HOMENAJE INDEPENDIENTE A MANUEL BUENDÍA</text>
+  </g>
+</svg>

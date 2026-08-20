@@ -24,7 +24,7 @@ class GobPresidencyCollector(BaseCollector):
 
     def __init__(self, source: SourceConfig, fetcher):
         if not source.archive_url:
-            raise ValueError("gob_presidency source requires archive_url")
+            raise ValueError("la fuente gob_presidency requiere archive_url")
         super().__init__(source, fetcher)
 
     def collect(self) -> list[RawDocument]:
@@ -34,7 +34,7 @@ class GobPresidencyCollector(BaseCollector):
             try:
                 document = self._fetch_article(item, rank)
             except Exception as exc:  # pragma: no cover - logged integration boundary
-                LOGGER.warning("failed fetching gob article url=%s error=%s", item["url"], exc)
+                LOGGER.warning("falló la descarga del artículo url=%s error=%s", item["url"], exc)
                 continue
             documents.append(document)
         return documents
@@ -66,14 +66,14 @@ class GobPresidencyCollector(BaseCollector):
                         "published_at": time_node.get("date", "") if time_node else "",
                     }
                 )
-        LOGGER.info("gob source=%s discovered=%s", self.source.name, len(discovered))
+        LOGGER.info("fuente gubernamental=%s descubiertos=%s", self.source.name, len(discovered))
         return discovered
 
     def _fetch_article(self, item: dict[str, str], rank: int) -> RawDocument:
         html, path, cached = self.fetcher.fetch(item["url"])
         text, extraction_meta = extract_article_text(html)
         if len(text) < 300:
-            raise ValueError(f"article text too short for {item['url']}")
+            raise ValueError(f"el texto del artículo es demasiado breve: {item['url']}")
         meta = extract_meta(html)
         title = item.get("title") or meta.get("og:title") or meta.get("title") or item["url"]
         published_at = parse_datetime(item.get("published_at")) or parse_datetime(
@@ -100,5 +100,7 @@ class GobPresidencyCollector(BaseCollector):
                 **meta,
             },
         )
-        LOGGER.info("collected document source=%s id=%s title=%s", self.source.name, document.id, title)
+        LOGGER.info(
+            "documento recolectado source=%s id=%s title=%s", self.source.name, document.id, title
+        )
         return document

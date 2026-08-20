@@ -1,0 +1,77 @@
+name: Propuesta de mejora
+description: Propón una mejora concreta y alineada con los principios de Red Privada.
+title: "[Propuesta]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer una mejora. Describe la necesidad antes que una implementación específica y evita incluir datos personales, credenciales, documentos privados o corpus sensibles.
+
+        Para vulnerabilidades, utiliza el canal privado de [GitHub Security Advisories](https://github.com/alejandrojlamas/red-privada/security/advisories/new).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema u oportunidad
+      description: ¿Qué necesidad de investigación, reproducibilidad o revisión humana resolvería?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Explica el comportamiento deseado y el alcance previsto.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Caso de uso depurado
+      description: Usa ejemplos sintéticos o públicos que puedas compartir legítimamente.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Resume otras opciones y por qué no cubren la necesidad.
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impacto principal
+      options:
+        - Procedencia y trazabilidad
+        - Calidad o reproducibilidad
+        - Revisión humana y explicabilidad
+        - Privacidad o seguridad
+        - Experiencia de desarrollo
+        - Documentación
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: responsible_ai
+    attributes:
+      label: Consideraciones de uso responsable
+      description: Explica posibles sesgos, falsos positivos, efectos sobre privacidad, dependencias externas y controles de revisión humana.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Confirmaciones
+      options:
+        - label: Revisé los *issues* abiertos y no encontré una propuesta equivalente.
+          required: true
+        - label: No incluí credenciales, datos personales, documentos privados ni corpus sensibles.
+          required: true
+        - label: Entiendo que las señales de Red Privada requieren verificación humana y no constituyen acusaciones.
+          required: true

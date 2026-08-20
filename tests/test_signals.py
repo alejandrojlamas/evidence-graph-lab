@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from red_privada.agents.signals import SignalsAgent
+from red_privada.agents.signals import SignalsAgent, _evidence_payload
 from red_privada.graph.sqlite_graph import SQLiteGraph
 from red_privada.models import (
     AppConfig,
@@ -128,11 +128,69 @@ def test_signals_agent_finds_small_notes_and_morning_readings(tmp_path) -> None:
 
     assert signals.small_notes
     assert signals.small_notes[0].document_id == "doc_small"
+    assert signals.small_notes[0].evidence[0]["assertion_type"] == "evidence"
     statuses = {reading.entity_name: reading.status for reading in signals.morning_readings}
     assert statuses["Pemex"] == "official_denial_or_correction"
     assert statuses["CNTE"] == "possible_silence"
     assert (output_dir / "small_notes.json").exists()
     assert (output_dir / "morning_readings.json").exists()
+
+
+def test_inference_relation_gets_no_structural_novelty_but_remains_selected(tmp_path) -> None:
+    db_path = tmp_path / "signals.sqlite"
+    agent = SignalsAgent(
+        _config(tmp_path, db_path, tmp_path / "output"),
+        SQLiteStore(db_path),
+        SQLiteGraph(db_path),
+    )
+    evidence_item = {
+        "edge_id": "edge_evidence",
+        "predicate": "SOBORNO",
+        "assertion_type": "evidence",
+        "source_sides": ["official_government", "configured_column_b"],
+        "subject_id": "ent_a",
+        "object_id": "ent_b",
+    }
+    inference_item = {
+        **evidence_item,
+        "edge_id": "edge_inference",
+        "assertion_type": "inference",
+    }
+
+    evidence_score, evidence_components, _ = agent._document_novelty(
+        [evidence_item],
+        {"edge_evidence": 1},
+        {"ent_a": 0.25, "ent_b": 0.0},
+    )
+    inference_score, inference_components, inference_selected = agent._document_novelty(
+        [inference_item],
+        {"edge_inference": 1},
+        {"ent_a": 0.25, "ent_b": 0.0},
+    )
+    _, _, combined_selected = agent._document_novelty(
+        [inference_item, evidence_item],
+        {"edge_evidence": 1, "edge_inference": 1},
+        {"ent_a": 0.25, "ent_b": 0.0},
+    )
+
+    assert evidence_score == 1.0
+    assert evidence_components["predicate_specificity"] == 1.0
+    assert inference_score == 0.0
+    assert set(inference_components.values()) == {0.0}
+    assert inference_selected == [inference_item]
+    assert combined_selected == [evidence_item, inference_item]
+
+
+def test_evidence_payload_preserves_assertion_type() -> None:
+    payload = _evidence_payload(
+        {
+            "evidence_id": "ev_1",
+            "predicate": "SOBORNO",
+            "assertion_type": "inference",
+        }
+    )
+
+    assert payload["assertion_type"] == "inference"
 
 
 class _FakeFetcher:
