@@ -20,7 +20,7 @@ from red_privada.models import (
 
 
 class SkepticAgent:
-    """Apply anti-apophenia checks before promoting a graph bridge for review."""
+    """Aplica controles contra la apofenia antes de priorizar un puente del grafo."""
 
     def __init__(self, graph: SQLiteGraph, config: ScoringConfig):
         self.graph = graph
@@ -128,7 +128,8 @@ class SkepticAgent:
             notes.append("below_improbability_threshold")
         return NullModelScore(
             score=score,
-            passed=p_value <= self.config.null_model_alpha and score >= self.config.improbability_threshold,
+            passed=p_value <= self.config.null_model_alpha
+            and score >= self.config.improbability_threshold,
             observed_betweenness=observed,
             null_mean=mean,
             null_std=std,
@@ -143,9 +144,12 @@ class SkepticAgent:
         candidate: BridgeCandidate,
         evidence: list[dict],
     ) -> SpecificityScore:
-        predicates = [item.get("predicate", "") for item in evidence]
+        specificity_evidence = [item for item in evidence if _is_evidence_assertion(item)]
+        predicates = [item.get("predicate", "") for item in specificity_evidence]
         non_comention_count = sum(1 for predicate in predicates if predicate != "CO_MENTIONED_WITH")
-        predicate_score = 0.35 if not predicates else 0.35 + 0.45 * (non_comention_count / len(predicates))
+        predicate_score = (
+            0.35 if not predicates else 0.35 + 0.45 * (non_comention_count / len(predicates))
+        )
         type_score = {
             "person": 0.78,
             "organization": 0.72,
@@ -153,19 +157,29 @@ class SkepticAgent:
             "event": 0.74,
             "place": 0.48,
             "other": 0.10,
-        }.get(str(candidate.entity_type.value if hasattr(candidate.entity_type, "value") else candidate.entity_type), 0.35)
-        quote_score = self._quote_specificity(evidence)
+        }.get(
+            str(
+                candidate.entity_type.value
+                if hasattr(candidate.entity_type, "value")
+                else candidate.entity_type
+            ),
+            0.35,
+        )
+        quote_score = self._quote_specificity(specificity_evidence)
         degree_penalty = 1 / (1 + max(0, candidate.degree - 6) / 6)
         score = clamp01(
-            0.35 * predicate_score
-            + 0.25 * quote_score
-            + 0.25 * type_score
-            + 0.15 * degree_penalty
+            0.35 * predicate_score + 0.25 * quote_score + 0.25 * type_score + 0.15 * degree_penalty
         )
         notes: list[str] = []
+        excluded_inferences = len(evidence) - len(specificity_evidence)
+        if excluded_inferences:
+            notes.append(f"inference_assertions_excluded_from_specificity={excluded_inferences}")
         if non_comention_count == 0:
             notes.append("only_co_mentions")
-        if candidate.entity_type == "place" or getattr(candidate.entity_type, "value", "") == "place":
+        if (
+            candidate.entity_type == "place"
+            or getattr(candidate.entity_type, "value", "") == "place"
+        ):
             notes.append("place_entities_are_often_broad")
         return SpecificityScore(
             score=score,
@@ -175,9 +189,9 @@ class SkepticAgent:
             type_score=type_score,
             degree_penalty=degree_penalty,
             minimal_claim=(
-                f"{candidate.entity_name} appears as a bridge entity across "
-                f"{', '.join(candidate.source_sides) or 'unclassified sources'}; "
-                "the specific claim requires human verification."
+                f"{candidate.entity_name} aparece como entidad puente entre "
+                f"{', '.join(candidate.source_sides) or 'fuentes sin clasificar'}; "
+                "la afirmación concreta requiere verificación humana."
             ),
             notes=notes,
         )
@@ -187,8 +201,12 @@ class SkepticAgent:
         candidate: BridgeCandidate,
         evidence: list[dict],
     ) -> TemporalAnomalyScore:
-        dates = sorted(dt for dt in (_parse_dt(item.get("published_at")) for item in evidence) if dt)
-        corpus_dates = sorted(dt for dt in (_parse_dt(item.get("published_at")) for item in self.all_evidence) if dt)
+        dates = sorted(
+            dt for dt in (_parse_dt(item.get("published_at")) for item in evidence) if dt
+        )
+        corpus_dates = sorted(
+            dt for dt in (_parse_dt(item.get("published_at")) for item in self.all_evidence) if dt
+        )
         if len(dates) < 2 or not corpus_dates:
             return TemporalAnomalyScore(
                 score=0.0,
@@ -278,7 +296,9 @@ class SkepticAgent:
                 word in quote.lower()
                 for word in ["director", "coordinador", "secretar", "gobernador", "president"]
             )
-            proper_markers = sum(1 for token in quote.split() if token[:1].isupper() and len(token) > 3)
+            proper_markers = sum(
+                1 for token in quote.split() if token[:1].isupper() and len(token) > 3
+            )
             length_score = 1.0 if 80 <= len(quote) <= 450 else 0.65
             scores.append(
                 clamp01(
@@ -320,13 +340,13 @@ class SkepticAgent:
     ) -> list[str]:
         caveats: list[str] = []
         if not independence.passed:
-            caveats.append("Independent convergence does not reach the configured threshold.")
+            caveats.append("La convergencia independiente no alcanza el umbral configurado.")
         if not null_model.passed:
-            caveats.append("Betweenness does not clearly exceed the null model.")
+            caveats.append("La intermediación no supera con claridad el modelo nulo.")
         if not specificity.passed:
-            caveats.append("The claim remains too broad.")
+            caveats.append("La afirmación todavía es demasiado amplia.")
         if not temporal.passed:
-            caveats.append("There is no strong temporal anomaly in this window.")
+            caveats.append("No hay una anomalía temporal fuerte en esta ventana.")
         return caveats
 
     @staticmethod
@@ -337,12 +357,12 @@ class SkepticAgent:
     ) -> str:
         if len(independence.source_sides) >= 2:
             return (
-                f"The simplest explanation is public thematic convergence around "
-                f"{candidate.entity_name}; it does not imply coordination or causality."
+                f"La explicación más simple es una convergencia temática pública alrededor de "
+                f"{candidate.entity_name}; no implica coordinación ni causalidad."
             )
         return (
-            f"The simplest explanation is local prominence of {candidate.entity_name} within "
-            "one source family."
+            f"La explicación más simple es la prominencia local de {candidate.entity_name} "
+            "dentro de una misma familia de fuentes."
         )
 
 
@@ -353,6 +373,11 @@ def _parse_dt(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value)
     except ValueError:
         return None
+
+
+def _is_evidence_assertion(item: dict) -> bool:
+    assertion_type = item.get("assertion_type", "evidence")
+    return getattr(assertion_type, "value", assertion_type) == "evidence"
 
 
 def clamp01(value: float) -> float:

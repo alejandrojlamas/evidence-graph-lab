@@ -62,6 +62,8 @@ class SQLiteGraph:
                   evidence_id TEXT PRIMARY KEY,
                   edge_id TEXT NOT NULL,
                   document_id TEXT NOT NULL,
+                  assertion_type TEXT NOT NULL,
+                  confidence REAL NOT NULL,
                   quote TEXT NOT NULL,
                   source_name TEXT NOT NULL,
                   source_side TEXT NOT NULL,
@@ -77,6 +79,38 @@ class SQLiteGraph:
                 CREATE INDEX IF NOT EXISTS idx_graph_evidence_edge ON graph_evidence(edge_id);
                 """
             )
+            evidence_columns = {
+                row["name"] for row in conn.execute("PRAGMA table_info(graph_evidence)")
+            }
+            migrated_evidence_schema = False
+            if "assertion_type" not in evidence_columns:
+                conn.execute("ALTER TABLE graph_evidence ADD COLUMN assertion_type TEXT")
+                migrated_evidence_schema = True
+            if "confidence" not in evidence_columns:
+                conn.execute("ALTER TABLE graph_evidence ADD COLUMN confidence REAL")
+                migrated_evidence_schema = True
+            legacy_values_missing = conn.execute(
+                """
+                SELECT 1
+                FROM graph_evidence
+                WHERE assertion_type IS NULL OR confidence IS NULL
+                LIMIT 1
+                """
+            ).fetchone()
+            if migrated_evidence_schema or legacy_values_missing:
+                # Los registros heredados no conservaban estos atributos por evidencia. No es
+                # seguro promoverlos a partir del agregado de la arista.
+                conn.execute(
+                    """
+                    UPDATE graph_evidence
+                    SET assertion_type = COALESCE(assertion_type, 'inference'),
+                        confidence = COALESCE(confidence, 0.0)
+                    """
+                )
+                legacy_edge_ids = {
+                    row["edge_id"] for row in conn.execute("SELECT edge_id FROM graph_edges")
+                }
+                self._reconcile_affected_edges(conn, legacy_edge_ids)
 
     def upsert_entities(self, entities: list[CanonicalEntity]) -> int:
         with self.connect() as conn:
@@ -108,10 +142,58 @@ class SQLiteGraph:
                 )
         return len(entities)
 
-    def upsert_relations(self, relations: list[ResolvedRelation]) -> tuple[int, int]:
+    def upsert_relations(
+        self,
+        relations: list[ResolvedRelation],
+        *,
+        replace_document_ids: set[str] | None = None,
+    ) -> tuple[int, int]:
+        """Escribe relaciones y, opcionalmente, reemplaza el corte completo por documento.
+
+        ``replace_document_ids`` distingue la reconciliación de la API aditiva usada por llamadas
+        de bajo nivel. Al proporcionarlo, la evidencia atribuida previamente a esos documentos se
+        elimina en la misma transacción antes de escribir las relaciones vigentes. Las aristas
+        conservan el soporte de documentos ajenos al reemplazo y solo se eliminan cuando ya no
+        queda evidencia.
+        """
+        replacement_ids = None
+        if replace_document_ids is not None:
+            replacement_ids = set(replace_document_ids)
+            relation_document_ids = {relation.document_id for relation in relations}
+            unexpected_ids = relation_document_ids - replacement_ids
+            if unexpected_ids:
+                unexpected = ", ".join(sorted(unexpected_ids))
+                raise ValueError(
+                    f"las relaciones incluyen documentos fuera del lote de reemplazo: {unexpected}"
+                )
+
         edges_written = 0
-        evidence_written = 0
         with self.connect() as conn:
+            if replacement_ids is not None:
+                conn.execute("BEGIN IMMEDIATE")
+
+            existing_evidence_ids = {
+                relation.evidence_id
+                for relation in relations
+                if conn.execute(
+                    "SELECT 1 FROM graph_evidence WHERE evidence_id = ?",
+                    (relation.evidence_id,),
+                ).fetchone()
+            }
+            affected_edge_ids = {relation.edge_id for relation in relations}
+
+            if replacement_ids is not None:
+                for document_id in sorted(replacement_ids):
+                    rows = conn.execute(
+                        "SELECT DISTINCT edge_id FROM graph_evidence WHERE document_id = ?",
+                        (document_id,),
+                    ).fetchall()
+                    affected_edge_ids.update(row["edge_id"] for row in rows)
+                    conn.execute(
+                        "DELETE FROM graph_evidence WHERE document_id = ?",
+                        (document_id,),
+                    )
+
             for relation in relations:
                 existing = conn.execute(
                     "SELECT source_sides_json, first_seen_at FROM graph_edges WHERE edge_id = ?",
@@ -150,19 +232,33 @@ class SQLiteGraph:
                     ),
                 )
                 edges_written += 1
-                before = conn.total_changes
                 conn.execute(
                     """
-                    INSERT OR IGNORE INTO graph_evidence (
-                      evidence_id, edge_id, document_id, quote, source_name, source_side,
-                      url, title, published_at, extraction_method, created_at
+                    INSERT INTO graph_evidence (
+                      evidence_id, edge_id, document_id, assertion_type, confidence,
+                      quote, source_name, source_side, url, title, published_at,
+                      extraction_method, created_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(evidence_id) DO UPDATE SET
+                      edge_id=excluded.edge_id,
+                      document_id=excluded.document_id,
+                      assertion_type=excluded.assertion_type,
+                      confidence=excluded.confidence,
+                      quote=excluded.quote,
+                      source_name=excluded.source_name,
+                      source_side=excluded.source_side,
+                      url=excluded.url,
+                      title=excluded.title,
+                      published_at=excluded.published_at,
+                      extraction_method=excluded.extraction_method
                     """,
                     (
                         relation.evidence_id,
                         relation.edge_id,
                         relation.document_id,
+                        relation.assertion_type.value,
+                        relation.confidence,
                         relation.quote,
                         relation.source_name,
                         relation.source_side,
@@ -173,9 +269,66 @@ class SQLiteGraph:
                         now_utc().isoformat(),
                     ),
                 )
-                if conn.total_changes > before:
-                    evidence_written += 1
+            self._reconcile_affected_edges(conn, affected_edge_ids)
+
+            # Preserve the historical meaning of evidence_writes: newly observed evidence IDs,
+            # not rows reinserted as part of an otherwise idempotent replacement.
+            evidence_written = len(
+                {relation.evidence_id for relation in relations} - existing_evidence_ids
+            )
         return edges_written, evidence_written
+
+    @staticmethod
+    def _reconcile_affected_edges(
+        conn: sqlite3.Connection,
+        edge_ids: set[str],
+    ) -> None:
+        for edge_id in sorted(edge_ids):
+            evidence = conn.execute(
+                """
+                SELECT document_id, source_side, published_at, assertion_type, confidence
+                FROM graph_evidence
+                WHERE edge_id = ?
+                """,
+                (edge_id,),
+            ).fetchall()
+            if not evidence:
+                conn.execute("DELETE FROM graph_edges WHERE edge_id = ?", (edge_id,))
+                continue
+
+            published = sorted(
+                row["published_at"] for row in evidence if row["published_at"] is not None
+            )
+            assertion_type = (
+                "evidence"
+                if any(row["assertion_type"] == "evidence" for row in evidence)
+                else "inference"
+            )
+            confidence = max(float(row["confidence"] or 0.0) for row in evidence)
+            conn.execute(
+                """
+                UPDATE graph_edges
+                SET assertion_type = ?,
+                    confidence = ?,
+                    first_seen_at = ?,
+                    last_seen_at = ?,
+                    source_sides_json = ?,
+                    updated_at = ?
+                WHERE edge_id = ?
+                """,
+                (
+                    assertion_type,
+                    confidence,
+                    published[0] if published else None,
+                    published[-1] if published else None,
+                    json.dumps(
+                        sorted({row["source_side"] for row in evidence}),
+                        ensure_ascii=False,
+                    ),
+                    now_utc().isoformat(),
+                    edge_id,
+                ),
+            )
 
     def to_networkx(self) -> nx.Graph:
         graph = nx.Graph()
@@ -205,7 +358,13 @@ class SQLiteGraph:
         with self.connect() as conn:
             rows = conn.execute(
                 """
-                SELECT ev.*, ge.predicate, ge.subject_id, ge.object_id
+                SELECT
+                  ev.*,
+                  ge.predicate,
+                  ge.assertion_type AS edge_assertion_type,
+                  ge.confidence AS edge_confidence,
+                  ge.subject_id,
+                  ge.object_id
                 FROM graph_evidence ev
                 JOIN graph_edges ge ON ge.edge_id = ev.edge_id
                 WHERE ge.subject_id = ? OR ge.object_id = ?
@@ -220,7 +379,13 @@ class SQLiteGraph:
         with self.connect() as conn:
             rows = conn.execute(
                 """
-                SELECT ev.*, ge.predicate, ge.subject_id, ge.object_id
+                SELECT
+                  ev.*,
+                  ge.predicate,
+                  ge.assertion_type AS edge_assertion_type,
+                  ge.confidence AS edge_confidence,
+                  ge.subject_id,
+                  ge.object_id
                 FROM graph_evidence ev
                 JOIN graph_edges ge ON ge.edge_id = ev.edge_id
                 ORDER BY ev.published_at, ev.evidence_id
@@ -245,7 +410,7 @@ class SQLiteGraph:
                 SELECT
                   ev.*,
                   ge.predicate,
-                  ge.assertion_type,
+                  ge.assertion_type AS edge_assertion_type,
                   ge.confidence AS edge_confidence,
                   ge.subject_id,
                   ge.object_id,
@@ -288,7 +453,7 @@ class SQLiteGraph:
                 SELECT
                   ev.*,
                   ge.predicate,
-                  ge.assertion_type,
+                  ge.assertion_type AS edge_assertion_type,
                   ge.confidence AS edge_confidence,
                   ge.subject_id,
                   ge.object_id,

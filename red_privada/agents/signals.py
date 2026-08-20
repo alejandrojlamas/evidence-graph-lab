@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SignalsAgent:
-    """Prioritize low-attention, structural-novelty, and official-corpus signals."""
+    """Prioriza señales de atención baja, novedad estructural y contraste oficial."""
 
     def __init__(self, config: AppConfig, store: SQLiteStore, graph: SQLiteGraph):
         self.config = config
@@ -35,10 +35,7 @@ class SignalsAgent:
         self.graph = graph
         self.output_dir = Path(config.project.output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.source_attention = {
-            source.name: source.attention_weight
-            for source in config.sources
-        }
+        self.source_attention = {source.name: source.attention_weight for source in config.sources}
 
     def run(self) -> InvestigationSignals:
         documents = self.store.list_documents()
@@ -54,7 +51,7 @@ class SignalsAgent:
         )
         self._write_outputs(signals)
         LOGGER.info(
-            "signals generated small_notes=%s morning_readings=%s",
+            "señales generadas small_notes=%s morning_readings=%s",
             len(signals.small_notes),
             len(signals.morning_readings),
         )
@@ -79,7 +76,9 @@ class SignalsAgent:
                 continue
             attention = self._attention_score(document)
             low_attention = 1.0 - attention
-            structural, components, selected = self._document_novelty(evidence, edge_counts, betweenness)
+            structural, components, selected = self._document_novelty(
+                evidence, edge_counts, betweenness
+            )
             score = clamp01(0.55 * structural + 0.45 * low_attention)
             if (
                 low_attention < self.signals_config.low_attention_threshold
@@ -102,8 +101,8 @@ class SignalsAgent:
                     novelty_components=components,
                     evidence=[_evidence_payload(item) for item in selected[:5]],
                     rationale=(
-                        "A relatively low-attention document with rare or structurally novel "
-                        "edges. This is a reading lead, not a thesis."
+                        "Documento de atención relativa baja con aristas raras o novedosas en "
+                        "la estructura. Es una ruta de lectura, no una tesis."
                     ),
                 )
             )
@@ -118,6 +117,15 @@ class SignalsAgent:
     ) -> tuple[float, dict[str, float], list[dict]]:
         scored: list[tuple[float, dict[str, float], dict]] = []
         for item in evidence:
+            if not _is_evidence_assertion(item):
+                components = {
+                    "rare_edge": 0.0,
+                    "bridge_endpoint": 0.0,
+                    "cross_side_edge": 0.0,
+                    "predicate_specificity": 0.0,
+                }
+                scored.append((0.0, components, item))
+                continue
             edge_count = max(1, edge_counts.get(item["edge_id"], 1))
             rare_edge = 1.0 / math.sqrt(edge_count)
             source_sides = item.get("source_sides") or [item.get("source_side", "unknown")]
@@ -196,19 +204,21 @@ class SignalsAgent:
                 continue
 
             caveats = [
-                "Textual window comparison: it does not imply deliberate omission or falsehood."
+                "Comparación de una ventana textual: no implica omisión deliberada ni falsedad."
             ]
             if official_docs and _latest_doc_dt(official_docs) < _earliest_evidence_dt(evidence):
-                caveats.append("The available official source predates the non-official mention.")
+                caveats.append("La fuente oficial disponible es anterior a la mención no oficial.")
             if not official_docs:
-                caveats.append("There are no official documents in the configured window.")
+                caveats.append("No hay documentos oficiales en la ventana configurada.")
 
             readings.append(
                 MorningReading(
                     entity_id=entity_id,
                     entity_name=entity["canonical_name"],
                     status=status,
-                    score=self._morning_score(evidence, source_sides, betweenness.get(entity_id, 0.0), status),
+                    score=self._morning_score(
+                        evidence, source_sides, betweenness.get(entity_id, 0.0), status
+                    ),
                     source_sides=source_sides,
                     non_official_evidence_count=len(evidence),
                     official_mentions_count=len(mention_quotes),
@@ -237,7 +247,9 @@ class SignalsAgent:
                     "document_id": document.id,
                     "title": document.title,
                     "url": document.url,
-                    "published_at": document.published_at.isoformat() if document.published_at else None,
+                    "published_at": document.published_at.isoformat()
+                    if document.published_at
+                    else None,
                     "quote": sentence,
                 }
                 mentions.append(payload)
@@ -248,8 +260,7 @@ class SignalsAgent:
     def _has_denial_keyword(self, text: str) -> bool:
         text_norm = normalize_name(text)
         return any(
-            normalize_name(keyword) in text_norm
-            for keyword in self.signals_config.denial_keywords
+            normalize_name(keyword) in text_norm for keyword in self.signals_config.denial_keywords
         )
 
     def _attention_score(self, document: RawDocument) -> float:
@@ -284,7 +295,9 @@ class SignalsAgent:
         side_score = min(1.0, len(source_sides) / 2.0)
         bridge_score = clamp01(4.0 * betweenness)
         status_bonus = 0.15 if status == "official_denial_or_correction" else 0.0
-        return clamp01(0.35 * evidence_score + 0.30 * side_score + 0.20 * bridge_score + status_bonus)
+        return clamp01(
+            0.35 * evidence_score + 0.30 * side_score + 0.20 * bridge_score + status_bonus
+        )
 
     @staticmethod
     def _window(documents: list[RawDocument], days: int) -> tuple[datetime | None, datetime | None]:
@@ -299,11 +312,19 @@ class SignalsAgent:
         morning_path = self.output_dir / "morning_readings.json"
         combined_path = self.output_dir / "signals.json"
         small_notes_path.write_text(
-            json.dumps([item.model_dump(mode="json") for item in signals.small_notes], ensure_ascii=False, indent=2),
+            json.dumps(
+                [item.model_dump(mode="json") for item in signals.small_notes],
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
         morning_path.write_text(
-            json.dumps([item.model_dump(mode="json") for item in signals.morning_readings], ensure_ascii=False, indent=2),
+            json.dumps(
+                [item.model_dump(mode="json") for item in signals.morning_readings],
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
         combined_path.write_text(signals.model_dump_json(indent=2), encoding="utf-8")
@@ -320,6 +341,7 @@ def _evidence_payload(item: dict) -> dict[str, Any]:
         "title": item.get("title"),
         "published_at": item.get("published_at"),
         "predicate": item.get("predicate"),
+        "assertion_type": item.get("assertion_type"),
         "subject_id": item.get("subject_id"),
         "object_id": item.get("object_id"),
         "quote": item.get("quote"),
@@ -332,6 +354,11 @@ def _alias_in_text(text: str, alias: str) -> bool:
         return False
     text_norm = normalize_name(text)
     return re.search(rf"(^|\s){re.escape(alias_norm)}($|\s)", text_norm) is not None
+
+
+def _is_evidence_assertion(item: dict) -> bool:
+    assertion_type = item.get("assertion_type", "evidence")
+    return getattr(assertion_type, "value", assertion_type) == "evidence"
 
 
 def _doc_dt(document: RawDocument) -> datetime | None:

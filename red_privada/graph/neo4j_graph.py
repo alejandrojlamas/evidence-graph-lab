@@ -17,6 +17,7 @@ class Neo4jGraph:
     def init(self) -> None:
         queries = [
             "CREATE CONSTRAINT entity_id IF NOT EXISTS FOR (e:Entity) REQUIRE e.id IS UNIQUE",
+            "CREATE CONSTRAINT assertion_id IF NOT EXISTS FOR (a:Assertion) REQUIRE a.id IS UNIQUE",
             "CREATE CONSTRAINT document_id IF NOT EXISTS FOR (d:Document) REQUIRE d.id IS UNIQUE",
             "CREATE CONSTRAINT evidence_id IF NOT EXISTS FOR (ev:Evidence) REQUIRE ev.id IS UNIQUE",
         ]
@@ -65,12 +66,23 @@ class Neo4jGraph:
                 ELSE r.confidence
             END,
             r.updated_at = datetime()
+        MERGE (a:Assertion {id: rel.edge_id})
+        SET a.predicate = rel.predicate,
+            a.assertion_type = rel.assertion_type,
+            a.confidence = CASE
+                WHEN a.confidence IS NULL OR rel.confidence > a.confidence THEN rel.confidence
+                ELSE a.confidence
+            END,
+            a.created_at = coalesce(a.created_at, datetime()),
+            a.updated_at = datetime()
+        MERGE (a)-[:SUBJECT]->(s)
+        MERGE (a)-[:OBJECT]->(o)
         MERGE (ev:Evidence {id: rel.evidence_id})
         SET ev.quote = rel.quote,
             ev.extraction_method = rel.extraction_method,
             ev.source_side = rel.source_side,
             ev.created_at = coalesce(ev.created_at, datetime())
-        MERGE (ev)-[:SUPPORTS]->(r)
+        MERGE (ev)-[:SUPPORTS]->(a)
         MERGE (ev)-[:FROM_DOCUMENT]->(d)
         """
         payload = [
@@ -79,10 +91,11 @@ class Neo4jGraph:
                 "subject_type": relation.subject_type.value,
                 "object_type": relation.object_type.value,
                 "assertion_type": relation.assertion_type.value,
-                "published_at": relation.published_at.isoformat() if relation.published_at else None,
+                "published_at": relation.published_at.isoformat()
+                if relation.published_at
+                else None,
             }
             for relation in relations
         ]
         self.driver.execute_query(query, relations=payload, database_=self.config.database)
         return len(relations), len(relations)
-

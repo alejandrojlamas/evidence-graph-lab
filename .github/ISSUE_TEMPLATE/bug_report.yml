@@ -1,0 +1,95 @@
+name: Informe de error
+description: Reporta un comportamiento reproducible que no coincide con lo esperado.
+title: "[Error]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por ayudar a mejorar Red Privada. Busca primero entre los *issues* existentes y usa datos sintéticos o públicos que puedas compartir legítimamente.
+
+        **No incluyas credenciales, datos personales, documentos privados, corpus confidenciales ni registros sin depurar.** Las vulnerabilidades deben reportarse de forma privada mediante [GitHub Security Advisories](https://github.com/alejandrojlamas/red-privada/security/advisories/new).
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afectada
+      description: Selecciona el componente que mejor describe el problema.
+      options:
+        - Instalación o configuración
+        - Recolección de fuentes
+        - Extracción asistida por IA
+        - Resolución de entidades
+        - Grafo y almacenamiento
+        - Puntuación o señales
+        - Interfaz de línea de comandos
+        - Documentación
+        - Otra
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión o commit
+      description: Indica la versión de Red Privada o el hash corto del commit.
+      placeholder: "Ejemplo: 0.1.0 o a1b2c3d"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Entorno
+      description: Sistema operativo y versión de Python, sin nombres de usuario ni rutas personales.
+      placeholder: "Ejemplo: macOS 15, Python 3.12"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del problema
+      description: Explica qué ocurrió y por qué parece incorrecto.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproducción mínima
+      description: Enumera los pasos mínimos usando configuración depurada y datos sintéticos o públicos.
+      placeholder: |
+        1. Configurar…
+        2. Ejecutar…
+        3. Observar…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: Describe el resultado que esperabas.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia depurada
+      description: Incluye solo fragmentos mínimos sin secretos, identificadores personales ni contenido sensible.
+      render: shell
+
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Confirmaciones
+      options:
+        - label: Verifiqué que no existe un *issue* abierto que describa el mismo problema.
+          required: true
+        - label: Eliminé credenciales, datos personales, rutas personales y corpus sensibles del reporte.
+          required: true
+        - label: Confirmo que este reporte no describe una vulnerabilidad de seguridad.
+          required: true

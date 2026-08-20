@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reportar una vulnerabilidad
+    url: https://github.com/alejandrojlamas/red-privada/security/advisories/new
+    about: Usa este canal privado y no publiques detalles explotables, credenciales ni datos sensibles.

@@ -3,9 +3,9 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evidence-graph-lab"
+name = "red-privada"
 version = "0.1.0"
-description = "An applied-AI lab for provenance-aware entity resolution and evidence graph analysis."
+description = "Laboratorio de IA aplicada para cartografiar relaciones con evidencia y procedencia verificable."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -24,7 +24,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "Natural Language :: English",
+  "Natural Language :: Spanish",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
@@ -52,22 +52,22 @@ dev = [
   "pytest>=8.3.3",
   "ruff>=0.8.0",
 ]
-embeddings = [
-  "sentence-transformers>=5.0.0",
-]
 
 [project.scripts]
-evidence-graph = "evidence_graph_lab.cli:app"
-red-privada = "red_privada.cli:app"  # Compatibility alias for the original 0.1 CLI.
+red-privada = "red_privada.cli:app"
+evidence-graph = "evidence_graph_lab.cli:app"  # Alias compatible durante la serie 0.x.
 
 [project.urls]
-Homepage = "https://github.com/alejandrojlamas/evidence-graph-lab"
-Repository = "https://github.com/alejandrojlamas/evidence-graph-lab.git"
-Issues = "https://github.com/alejandrojlamas/evidence-graph-lab/issues"
-Documentation = "https://github.com/alejandrojlamas/evidence-graph-lab#readme"
+Homepage = "https://github.com/alejandrojlamas/red-privada"
+Repository = "https://github.com/alejandrojlamas/red-privada.git"
+Issues = "https://github.com/alejandrojlamas/red-privada/issues"
+Documentation = "https://github.com/alejandrojlamas/red-privada#readme"
 
 [tool.setuptools.packages.find]
 include = ["evidence_graph_lab*", "red_privada*"]
+
+[tool.setuptools.package-data]
+red_privada = ["recursos/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

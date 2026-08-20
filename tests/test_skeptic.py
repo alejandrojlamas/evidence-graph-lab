@@ -59,6 +59,37 @@ def test_temporal_anomaly_uses_corpus_window(tmp_path) -> None:
     assert report.final_score >= 0
 
 
+def test_inference_relation_gets_no_specificity_bonus_but_remains_reviewable(tmp_path) -> None:
+    evidence_graph = _specificity_graph(tmp_path / "evidence.sqlite", AssertionType.evidence)
+    inference_graph = _specificity_graph(tmp_path / "inference.sqlite", AssertionType.inference)
+    candidate = BridgeCandidate(
+        entity_id="ent_a",
+        entity_name="Ana",
+        entity_type=EntityType.person,
+        bridge_score=0.0,
+        degree=1,
+        source_sides=["configured_column_b"],
+        evidence=[],
+    )
+
+    evidence_items = evidence_graph.edge_evidence_for_entity("ent_a")
+    inference_items = inference_graph.edge_evidence_for_entity("ent_a")
+    evidence_specificity = SkepticAgent(evidence_graph, ScoringConfig())._specificity(
+        candidate, evidence_items
+    )
+    inference_agent = SkepticAgent(inference_graph, ScoringConfig())
+    inference_specificity = inference_agent._specificity(candidate, inference_items)
+
+    assert evidence_items[0]["assertion_type"] == "evidence"
+    assert inference_items[0]["assertion_type"] == "inference"
+    assert evidence_specificity.predicate_score == 0.8
+    assert inference_specificity.predicate_score == 0.35
+    assert evidence_specificity.quote_score > 0
+    assert inference_specificity.quote_score == 0
+    assert "inference_assertions_excluded_from_specificity=1" in inference_specificity.notes
+    assert inference_agent.review(candidate).candidate_id == "ent_a"
+
+
 def _scoring_graph(tmp_path) -> SQLiteGraph:
     graph = SQLiteGraph(tmp_path / "scoring.sqlite")
     graph.upsert_entities(
@@ -159,6 +190,51 @@ def _scoring_graph(tmp_path) -> SQLiteGraph:
     return graph
 
 
+def _specificity_graph(path, assertion_type: AssertionType) -> SQLiteGraph:
+    graph = SQLiteGraph(path)
+    graph.upsert_entities(
+        [
+            CanonicalEntity(
+                canonical_id="ent_a",
+                canonical_name="Ana",
+                entity_type=EntityType.person,
+                aliases=[],
+                resolution_reason="test",
+                confidence=1,
+            ),
+            CanonicalEntity(
+                canonical_id="ent_b",
+                canonical_name="Luis",
+                entity_type=EntityType.person,
+                aliases=[],
+                resolution_reason="test",
+                confidence=1,
+            ),
+        ]
+    )
+    graph.upsert_relations(
+        [
+            _relation(
+                "edge_ab",
+                "ent_a",
+                "Ana",
+                EntityType.person,
+                "ent_b",
+                "Luis",
+                EntityType.person,
+                "ev_ab",
+                "configured_column_b",
+                "red_privada",
+                datetime(2026, 6, 1, tzinfo=timezone.utc),
+                "Ana negó haber sobornado a Luis durante la reunión del 14 de mayo.",
+                predicate="SOBORNO",
+                assertion_type=assertion_type,
+            )
+        ]
+    )
+    return graph
+
+
 def _relation(
     edge_id: str,
     subject_id: str,
@@ -172,17 +248,19 @@ def _relation(
     source_name: str,
     published_at: datetime,
     quote: str,
+    predicate: str = "CO_MENTIONED_WITH",
+    assertion_type: AssertionType = AssertionType.evidence,
 ) -> ResolvedRelation:
     return ResolvedRelation(
         edge_id=edge_id,
         subject_id=subject_id,
         subject_name=subject_name,
         subject_type=subject_type,
-        predicate="CO_MENTIONED_WITH",
+        predicate=predicate,
         object_id=object_id,
         object_name=object_name,
         object_type=object_type,
-        assertion_type=AssertionType.evidence,
+        assertion_type=assertion_type,
         confidence=0.7,
         evidence_id=evidence_id,
         document_id=f"doc_{evidence_id}",

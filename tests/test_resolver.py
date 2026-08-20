@@ -26,4 +26,3 @@ def test_aliases_resolve_to_same_canonical_entity() -> None:
     )
     assert first.canonical_id == second.canonical_id
     assert "Claudia Sheinbaum" in second.aliases
-

@@ -22,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 class RSSFeedCollector(BaseCollector):
     def collect(self) -> list[RawDocument]:
         if not self.source.feed_url:
-            raise ValueError("rss_feed source requires feed_url")
+            raise ValueError("la fuente rss_feed requiere feed_url")
         xml, path, cached = self.fetcher.fetch(self.source.feed_url)
         items = self._parse_feed(xml)
         documents: list[RawDocument] = []
@@ -30,10 +30,20 @@ class RSSFeedCollector(BaseCollector):
             try:
                 document = self._document_from_item(item, rank, str(path), cached)
             except Exception as exc:  # pragma: no cover - logged integration boundary
-                LOGGER.warning("failed rss item source=%s url=%s error=%s", self.source.name, item.get("link"), exc)
+                LOGGER.warning(
+                    "falló un elemento RSS source=%s url=%s error=%s",
+                    self.source.name,
+                    item.get("link"),
+                    exc,
+                )
                 continue
             documents.append(document)
-        LOGGER.info("rss source=%s collected=%s feed_items=%s", self.source.name, len(documents), len(items))
+        LOGGER.info(
+            "fuente RSS=%s recolectados=%s elementos=%s",
+            self.source.name,
+            len(documents),
+            len(items),
+        )
         return documents
 
     def _document_from_item(
@@ -69,14 +79,20 @@ class RSSFeedCollector(BaseCollector):
             published_at = published_at or parse_datetime(
                 meta.get("article:published_time") or meta.get("fecha_publicacion")
             )
-            metadata.update({"article_cached": article_cached, "article_path": str(article_path), **extraction_meta})
+            metadata.update(
+                {
+                    "article_cached": article_cached,
+                    "article_path": str(article_path),
+                    **extraction_meta,
+                }
+            )
             raw_html_path = str(article_path)
         else:
             text = normalize_ws(f"{title}. {item.get('summary') or ''}")
             raw_html_path = feed_path
 
         if len(text) < self.source.min_text_chars:
-            raise ValueError("rss item text too short")
+            raise ValueError("el texto del elemento RSS es demasiado breve")
 
         return RawDocument(
             id=RawDocument.id_for(self.source.name, url),
@@ -108,7 +124,8 @@ class RSSFeedCollector(BaseCollector):
                     "title": title,
                     "link": normalize_ws(link),
                     "summary": _html_text(_node_text(item, "description")),
-                    "author": _node_text(item, "author") or _node_text(item, "{http://purl.org/dc/elements/1.1/}creator"),
+                    "author": _node_text(item, "author")
+                    or _node_text(item, "{http://purl.org/dc/elements/1.1/}creator"),
                     "published_at": _node_text(item, "pubDate"),
                     "guid": _node_text(item, "guid"),
                     "categories": [

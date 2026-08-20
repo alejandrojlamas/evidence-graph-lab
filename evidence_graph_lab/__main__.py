@@ -1,4 +1,4 @@
-"""Run Evidence Graph Lab with ``python -m evidence_graph_lab``."""
+"""Ejecuta el alias compatible con ``python -m evidence_graph_lab``."""
 
 from evidence_graph_lab.cli import app
 
